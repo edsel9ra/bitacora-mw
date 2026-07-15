@@ -1,0 +1,68 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    image: bitacora-mw-app:prod
+    restart: unless-stopped
+    env_file:
+      - ${APP_ENV_FILE:-.env}
+    environment:
+      MYSQL_HOST: db
+      BITACORA_STORAGE_PATH: /var/www/html/storage/bitacoras_pdf
+      SESSION_SECURE: ${SESSION_SECURE:-true}
+      SESSION_SAMESITE: ${SESSION_SAMESITE:-Lax}
+      SMTP_VERIFY_TLS: ${SMTP_VERIFY_TLS:-true}
+    command: sh -lc "mkdir -p storage/bitacoras_pdf storage/logs && chown -R www-data:www-data public/uploads storage && chmod -R ug+rwX public/uploads storage && exec php-fpm"
+    volumes:
+      - bitacora_storage:/var/www/html/storage
+      - bitacora_uploads:/var/www/html/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - bitacora_net
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile.prod
+    image: bitacora-mw-nginx:prod
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+    volumes:
+      - bitacora_uploads:/var/www/html/public/uploads:ro
+    depends_on:
+      - app
+    networks:
+      - bitacora_net
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    env_file:
+      - ${APP_ENV_FILE:-.env}
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+    volumes:
+      - bitacora_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - bitacora_net
+
+networks:
+  bitacora_net:
+    driver: bridge
+
+volumes:
+  bitacora_db_data:
+  bitacora_storage:
+  bitacora_uploads:

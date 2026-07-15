@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="background: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    <table style="border: 1px solid black; width:100%;">
+        <thead>
+            <tr>
+                <td style="text-align: center; background: #E30613; color: #ffffff;" colspan= "2">
+                    <h1><b>Bitácora diaria</b></h1></td>
+            </tr>
+            <tr>
+                <td style="text-align: center;" width="20%">
+                    <img src="../img/ALITAS.png" alt="logo-mw" width="80px" height="67px">
+                </td>
+            </tr>
+        </thead>
+    </table>
+</body>
+</html>
+
+
+<td style="text-align: left;"><span>a</span></td>
+<td style="text-align: left;"><span>s</span></td>
+<td style="text-align: left;"><span>d</span></td>
+<td style="text-align: left;"><span>f</span></td>
+
+
+
+<script>
+    function enviaCorreo(){
+     var fecha = $("#inputDate").val();
+     var sede = $("#inputSede").val();
+     var responsable = $("#inputResponsable").val();
+     var cargo = $("#inputCargo").val();
+     var servicioalcliente = $("#sacb").val();
+     var gestionhumana = $("#ghb").val();
+     var sst = $("#sstb").val();
+     var sistemas = $("#tib").val();
+     var mantenimiento = $("#man").val();
+     var calidad = $("#cba").val();
+     var inventarios = $("#invb").val();
+     var ndomirappi = $("#dpb").val();
+     var caja = $("#ncaja").val();
+     var rappi = $("#inputRappi").val();
+     var domi = $("#inputDomi").val();
+     var ticketpromedio = $("#tpb").val();
+     $.ajax( 
+         {
+             url: '../enviar_mg.php',
+             type: 'POST',
+             data:{
+                 fecha:fecha,
+                 sede:sede,
+                 responsable:responsable,
+                 cargo:cargo,
+                 sac:servicioalcliente,
+                 gh:gestionhumana,
+                 sst:sst,
+                 ti:sistemas,
+                 mantenimiento:mantenimiento,
+                 calidad:calidad,
+                 inv:inventarios,
+                 ndp:ndomirappi,
+                 caja:caja,
+                 rappi:rappi,
+                 domi:domi,
+                 tp:ticketpromedio
+                }
+            }
+        ).done(function(resp){
+            if(resp>0){
+                Swal.fire('Mensaje de confirmación','La bitácora se ha enviado correctamente','success');
+                $("#inputDate").val("");
+                $("#inputSede").val();
+                $("#inputResponsable").val();
+                $("#inputCargo").val();
+                $("#sacb").val();
+                $("#ghb").val();
+                $("#sstb").val();
+                $("#tib").val();
+                $("#man").val();
+                $("#cba").val();
+                $("#invb").val();
+                $("#dpb").val();
+                $("#ncaja").val();
+                $("#inputRappi").val();
+                $("#inputDomi").val();
+                $("#tpb").val();
+                $("#inputDate").focus();
+            }else{
+                Swal.fire('Mensaje de error','No se pudo envia la bitácora','error');
+                console.log(resp);
+            }
+        })
+    }
+    </script>
+
+
+
+
+if(resp>0){
+    Swal.fire('Mensaje de confirmación','La bitácora se ha enviado correctamente','success');
+    $("#inputDate").val("");
+    $("#inputSede").val();
+    $("#inputResponsable").val();
+    $("#inputCargo").val();
+    $("#sacb").val();
+    $("#ghb").val();
+    $("#sstb").val();
+    $("#tib").val();
+    $("#man").val();
+    $("#cba").val();
+    $("#invb").val();
+    $("#dpb").val();
+    $("#ncaja").val();
+    $("#inputRappi").val();
+    $("#inputDomi").val();
+    $("#tpb").val();
+    $("#inputDate").focus();
+}else{
+    Swal.fire('Mensaje de error','No se pudo envia la bitácora','error');
+    console.log(resp);
+ }

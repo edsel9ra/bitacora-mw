@@ -1,0 +1,45 @@
+FROM php:8.4-fpm
+
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    libzip-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libonig-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        pdo \
+        pdo_mysql \
+        mysqli \
+        mbstring \
+        zip \
+        gd \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+COPY . /var/www/html
+COPY docker/php/php.prod.ini /usr/local/etc/php/conf.d/custom.ini
+
+RUN cd public/scripts \
+    && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader \
+    && mkdir -p \
+        public/uploads/preventivos \
+        public/uploads/correctivos \
+        public/uploads/locativos/preventivos \
+        public/uploads/locativos/correctivos \
+        storage/bitacoras_pdf \
+        storage/logs \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R ug+rwX storage public/uploads
+
+EXPOSE 9000
+
+CMD ["php-fpm"]

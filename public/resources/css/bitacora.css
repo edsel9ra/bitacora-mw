@@ -1,0 +1,404 @@
+:root {
+    --bit-red: #d71920;
+    --bit-red-dark: #8b1116;
+    --bit-ink: #1f2937;
+    --bit-muted: #6b7280;
+    --bit-line: #e5e7eb;
+    --bit-soft: #f6f7fb;
+    --bit-card: #ffffff;
+    --bit-shadow: 0 22px 60px rgba(31, 41, 55, 0.14);
+}
+
+body.bitacora-page {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(215, 25, 32, 0.15), transparent 30rem),
+        linear-gradient(180deg, #f7f2f2 0%, #f5f7fb 45%, #eef1f6 100%);
+    color: var(--bit-ink);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.bit-shell {
+    width: min(1480px, calc(100% - 28px));
+    margin: 0 auto;
+    padding: 22px 0 42px;
+}
+
+.bit-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.bit-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.bit-brand-logo {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    object-fit: contain;
+    padding: 8px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(139, 17, 22, 0.18);
+}
+
+.bit-eyebrow {
+    margin: 0 0 2px;
+    color: var(--bit-red-dark);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.bit-title {
+    margin: 0;
+    font-size: clamp(25px, 3vw, 42px);
+    font-weight: 850;
+    letter-spacing: -0.04em;
+    color: #16181d;
+}
+
+.bit-user-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(229, 231, 235, 0.9);
+    color: var(--bit-ink);
+    font-weight: 700;
+    box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
+}
+
+.bit-user-pill strong {
+    color: var(--bit-red-dark);
+}
+
+.bit-session {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.bit-logout {
+    border: 0;
+    border-radius: 14px;
+    padding: 11px 16px;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    box-shadow: 0 14px 28px rgba(215, 25, 32, 0.28);
+}
+
+.bit-logout:hover,
+.bit-logout:focus {
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 18px 34px rgba(215, 25, 32, 0.34);
+}
+
+.bit-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 28px;
+    box-shadow: var(--bit-shadow);
+}
+
+.bit-card-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 24px 28px;
+    background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
+    border-bottom: 1px solid var(--bit-line);
+    border-radius: 28px 28px 0 0;
+}
+
+.bit-card-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 850;
+    color: #171717;
+}
+
+.bit-card-header p {
+    margin: 6px 0 0;
+    color: var(--bit-muted);
+}
+
+.bit-card-body {
+    padding: 22px 28px 30px;
+}
+
+.bit-section-heading {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 28px 0 18px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(215, 25, 32, 0.09), rgba(139, 17, 22, 0.04));
+    border: 1px solid rgba(215, 25, 32, 0.14);
+}
+
+.bit-section-heading:first-child {
+    margin-top: 0;
+}
+
+.bit-section-index {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 850;
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    box-shadow: 0 10px 18px rgba(215, 25, 32, 0.22);
+}
+
+.bit-section-heading h4 {
+    margin: 0;
+    color: #222;
+    font-weight: 850;
+    font-size: 18px;
+}
+
+.bit-field {
+    margin-bottom: 18px;
+}
+
+.bit-label {
+    display: block;
+    color: #2f3542;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+}
+
+.bit-label .text-danger {
+    font-size: 16px;
+}
+
+.bit-input,
+.bitacora-page .select2-container--default .select2-selection--multiple,
+.bitacora-page .select2-container--default .select2-selection--single {
+    border: 1px solid #d9dee8 !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    min-height: 46px;
+    box-shadow: 0 1px 0 rgba(17, 24, 39, 0.02);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.bit-input:focus,
+.bitacora-page .select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: rgba(215, 25, 32, 0.75) !important;
+    box-shadow: 0 0 0 0.2rem rgba(215, 25, 32, 0.12) !important;
+}
+
+textarea.bit-input {
+    resize: vertical;
+    min-height: 108px;
+}
+
+.bit-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.bit-radio-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid #dce2ec;
+    font-weight: 750;
+    cursor: pointer;
+    margin: 0;
+}
+
+.bit-radio-pill input {
+    accent-color: var(--bit-red);
+}
+
+.bit-detail-panel {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 16px;
+    background: var(--bit-soft);
+    border: 1px dashed #d7dce6;
+}
+
+.bit-actions {
+    position: sticky;
+    bottom: 16px;
+    z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 28px;
+    padding: 14px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(229, 231, 235, 0.95);
+    box-shadow: 0 18px 42px rgba(31, 41, 55, 0.13);
+    backdrop-filter: blur(10px);
+}
+
+.bit-btn-primary,
+.bit-btn-secondary,
+.bit-btn-ghost,
+.bit-btn-pdf {
+    border: 0;
+    border-radius: 15px;
+    min-height: 46px;
+    padding: 11px 16px;
+    font-weight: 850;
+}
+
+.bit-btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    box-shadow: 0 14px 28px rgba(215, 25, 32, 0.28);
+}
+
+.bit-btn-secondary {
+    color: #fff;
+    background: #2f3542;
+}
+
+.bit-btn-ghost {
+    color: var(--bit-red-dark);
+    background: #fff2f2;
+    border: 1px solid rgba(215, 25, 32, 0.18);
+}
+
+.bit-btn-pdf {
+    color: #253047;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+}
+
+.bit-btn-primary:disabled,
+.bit-btn-secondary:disabled,
+.bit-btn-ghost:disabled,
+.bit-btn-pdf:disabled {
+    opacity: 0.72;
+    cursor: not-allowed;
+}
+
+.bitacora-page .swal2-popup.bit-swal-popup {
+    border-radius: 24px;
+    padding: 1.7rem;
+}
+
+.bit-swal-summary {
+    text-align: left;
+    display: grid;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.bit-swal-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: #f7f8fb;
+    color: #2f3542;
+    font-weight: 700;
+}
+
+.bit-swal-badge {
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.bit-swal-badge.ok {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.bit-swal-badge.warn {
+    color: #92400e;
+    background: #fef3c7;
+}
+
+.bit-swal-badge.error {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+@media (max-width: 768px) {
+    .bit-shell {
+        width: min(100% - 18px, 1480px);
+        padding-top: 12px;
+    }
+
+    .bit-topbar,
+    .bit-card-header {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .bit-brand {
+        align-items: flex-start;
+    }
+
+    .bit-user-pill,
+    .bit-logout {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .bit-session {
+        justify-content: stretch;
+    }
+
+    .bit-card-body,
+    .bit-card-header {
+        padding: 18px;
+    }
+
+    .bit-section-heading {
+        position: static;
+        margin-top: 20px;
+    }
+
+    .bit-actions {
+        position: static;
+        justify-content: stretch;
+    }
+
+    .bit-actions button {
+        width: 100%;
+    }
+}

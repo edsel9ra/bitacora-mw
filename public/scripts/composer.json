@@ -1,0 +1,9 @@
+{
+    "name": "misterwings/bitacora-scripts",
+    "description": "Dependencias para generación de PDFs de la bitácora Mister Wings.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "mpdf/mpdf": "^8.3"
+    }
+}
