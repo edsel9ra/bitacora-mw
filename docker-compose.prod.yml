@@ -13,13 +13,13 @@ services:
       SESSION_SECURE: ${SESSION_SECURE:-true}
       SESSION_SAMESITE: ${SESSION_SAMESITE:-Lax}
       SMTP_VERIFY_TLS: ${SMTP_VERIFY_TLS:-true}
-    command: sh -lc "mkdir -p storage/bitacoras_pdf storage/logs && chown -R www-data:www-data public/uploads storage && chmod -R ug+rwX public/uploads storage && exec php-fpm"
+    command: sh -lc "mkdir -p public/uploads/preventivos public/uploads/correctivos public/uploads/locativos/preventivos public/uploads/locativos/correctivos storage/bitacoras_pdf storage/logs && chown -R www-data:www-data public/uploads storage && chmod -R ug+rwX public/uploads storage && exec php-fpm"
     volumes:
       - bitacora_storage:/var/www/html/storage
       - bitacora_uploads:/var/www/html/public/uploads
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
     networks:
       - bitacora_net
 
@@ -51,10 +51,11 @@ services:
     volumes:
       - bitacora_db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$${MYSQL_ROOT_PASSWORD}\" --silent || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 10
+      timeout: 10s
+      retries: 30
+      start_period: 120s
     networks:
       - bitacora_net
 

@@ -55,6 +55,21 @@ docker compose -f docker-compose.prod.yml exec app sh -lc "cd public/scripts && 
 
 Luego abre `http://IP_DEL_SERVIDOR` o el dominio configurado.
 
+## Diagnóstico De MySQL Unhealthy
+
+Si el panel de despliegue reporta `container db is unhealthy`, revisa los logs del servicio `db`:
+
+```bash
+docker compose -f docker-compose.prod.yml logs --tail=120 db
+```
+
+Casos frecuentes:
+
+- Primera inicialización lenta en servidores pequeños: espera unos minutos y revisa si el contenedor termina quedando `healthy`.
+- `MYSQL_USER=root`: no uses `root` como usuario de aplicación; usa un usuario como `bitacora_user` y deja `MYSQL_ROOT_PASSWORD` solo para administración.
+- Variables vacías o mal escapadas: confirma que `.env` tenga `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD` con valores reales.
+- Contraseñas con caracteres especiales en `.env`: si usas `#`, espacios o comillas, envuélvelas entre comillas.
+
 ## HTTPS
 
 Recomendado: usar un proxy inverso con certificados TLS, por ejemplo Nginx Proxy Manager, Traefik, Caddy o Nginx + Certbot.

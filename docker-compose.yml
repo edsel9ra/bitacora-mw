@@ -57,10 +57,11 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$${MYSQL_ROOT_PASSWORD}\" --silent || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 10
+      timeout: 10s
+      retries: 30
+      start_period: 120s
     networks:
       - php_plain_net
 
