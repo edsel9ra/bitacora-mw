@@ -29,8 +29,8 @@ services:
       dockerfile: docker/nginx/Dockerfile.prod
     image: bitacora-mw-nginx:prod
     restart: unless-stopped
-    ports:
-      - "${NGINX_HTTP_PORT:-80}:80"
+    expose:
+      - "80"
     volumes:
       - bitacora_uploads:/var/www/html/public/uploads:ro
     depends_on:

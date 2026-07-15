@@ -5,7 +5,7 @@ Esta guía deja la aplicación lista para producción usando Docker Compose, sin
 ## Requisitos
 
 - Servidor Linux con Docker Engine y Docker Compose Plugin.
-- Puerto HTTP disponible, por defecto `80`.
+- Proxy inverso/plataforma que enrute tráfico al servicio `nginx` en el puerto interno `80`.
 - Acceso SMTP válido.
 - Acceso SSH al servidor.
 
@@ -53,7 +53,26 @@ docker compose -f docker-compose.prod.yml exec app sh -lc "find public -path 'pu
 docker compose -f docker-compose.prod.yml exec app sh -lc "cd public/scripts && composer validate --strict && composer audit"
 ```
 
-Luego abre `http://IP_DEL_SERVIDOR` o el dominio configurado.
+Luego abre el dominio configurado en tu proxy/plataforma.
+
+## Exposición HTTP
+
+`docker-compose.prod.yml` no publica `ports` en el host. Expone el puerto interno `80` del servicio `nginx` para que Coolify u otro proxy inverso lo enrute sin chocar con el puerto `80` del servidor.
+
+Si vas a ejecutar sin proxy inverso ni Coolify, agrega un override local no versionado, por ejemplo `docker-compose.expose.yml`:
+
+```yaml
+services:
+  nginx:
+    ports:
+      - "80:80"
+```
+
+Y arranca con:
+
+```bash
+docker compose -f docker-compose.prod.yml -f docker-compose.expose.yml up -d --build
+```
 
 ## Diagnóstico De MySQL Unhealthy
 
