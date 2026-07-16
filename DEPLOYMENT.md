@@ -59,6 +59,36 @@ Luego abre el dominio configurado en tu proxy/plataforma.
 
 `docker-compose.prod.yml` no publica `ports` en el host. Expone el puerto interno `80` del servicio `nginx` para que Coolify u otro proxy inverso lo enrute sin chocar con el puerto `80` del servidor.
 
+En Coolify, configura el dominio/proxy apuntando exactamente al servicio `nginx` y al puerto interno `80`. No apuntes al servicio `app` ni al puerto `9000`: `app` ejecuta PHP-FPM, no HTTP, y el proxy terminará en `504 Gateway Timeout`.
+
+En la pantalla del recurso Compose, asigna el dominio al servicio `nginx`. Como `nginx` escucha en el puerto interno `80`, el dominio puede quedar como `https://tu-dominio.com` sin sufijo de puerto.
+
+El endpoint de salud HTTP es:
+
+```text
+/healthz
+```
+
+Debe responder `ok` desde el servicio `nginx`.
+
+## Diagnóstico De 504 En Coolify
+
+Si el despliegue termina pero el navegador muestra `504 Gateway Timeout`, revisa primero la configuración del dominio en Coolify:
+
+- El dominio debe estar asignado al servicio `nginx`, no a `app`.
+- El puerto interno debe ser `80`, no `9000`.
+- El endpoint `/healthz` debe responder `ok`.
+
+Comandos útiles desde el servidor o consola de Coolify:
+
+```bash
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs --tail=120 nginx app
+docker compose -f docker-compose.prod.yml exec nginx wget -q -O - http://127.0.0.1/healthz
+```
+
+Si `/healthz` responde dentro del contenedor pero el dominio externo sigue en `504`, el problema está en el enrutamiento del proxy/Coolify hacia el servicio o puerto incorrecto.
+
 Si vas a ejecutar sin proxy inverso ni Coolify, agrega un override local no versionado, por ejemplo `docker-compose.expose.yml`:
 
 ```yaml

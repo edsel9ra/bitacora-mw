@@ -17,6 +17,12 @@ services:
     volumes:
       - bitacora_storage:/var/www/html/storage
       - bitacora_uploads:/var/www/html/public/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm -t >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     depends_on:
       db:
         condition: service_started
@@ -34,7 +40,14 @@ services:
     volumes:
       - bitacora_uploads:/var/www/html/public/uploads:ro
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - bitacora_net
 
