@@ -63,6 +63,8 @@ En Coolify, configura el dominio/proxy apuntando exactamente al servicio `nginx`
 
 En la pantalla del recurso Compose, asigna el dominio al servicio `nginx`. Como `nginx` escucha en el puerto interno `80`, el dominio puede quedar como `https://tu-dominio.com` sin sufijo de puerto.
 
+El compose de producción usa la red default del stack para que el proxy de Coolify pueda alcanzar el servicio `nginx`. No agregues una red custom para estos servicios salvo que también configures el proxy para esa red.
+
 El endpoint de salud HTTP es:
 
 ```text
@@ -71,6 +73,14 @@ El endpoint de salud HTTP es:
 
 Debe responder `ok` desde el servicio `nginx`.
 
+El endpoint para validar que `nginx` también llega a PHP-FPM es:
+
+```text
+/php-healthz.php
+```
+
+También debe responder `ok`.
+
 ## Diagnóstico De 504 En Coolify
 
 Si el despliegue termina pero el navegador muestra `504 Gateway Timeout`, revisa primero la configuración del dominio en Coolify:
@@ -78,6 +88,7 @@ Si el despliegue termina pero el navegador muestra `504 Gateway Timeout`, revisa
 - El dominio debe estar asignado al servicio `nginx`, no a `app`.
 - El puerto interno debe ser `80`, no `9000`.
 - El endpoint `/healthz` debe responder `ok`.
+- El endpoint `/php-healthz.php` debe responder `ok`.
 
 Comandos útiles desde el servidor o consola de Coolify:
 
@@ -85,9 +96,12 @@ Comandos útiles desde el servidor o consola de Coolify:
 docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml logs --tail=120 nginx app
 docker compose -f docker-compose.prod.yml exec nginx wget -q -O - http://127.0.0.1/healthz
+docker compose -f docker-compose.prod.yml exec nginx wget -q -O - http://127.0.0.1/php-healthz.php
 ```
 
 Si `/healthz` responde dentro del contenedor pero el dominio externo sigue en `504`, el problema está en el enrutamiento del proxy/Coolify hacia el servicio o puerto incorrecto.
+
+Si `/healthz` responde pero `/php-healthz.php` falla, el problema está entre `nginx` y PHP-FPM (`app:9000`) o en el arranque del servicio `app`.
 
 Si vas a ejecutar sin proxy inverso ni Coolify, agrega un override local no versionado, por ejemplo `docker-compose.expose.yml`:
 
