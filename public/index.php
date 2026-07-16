@@ -70,7 +70,7 @@ app_start_session();
             </form>
 
             <div id="footer" class="login-footer">
-                <span>Developed by Andrés Mesa for Mister Wings®</span>
+                <span>Powered by Edson Ramos for Mister Wings®</span>
             </div>
 
         </div>
