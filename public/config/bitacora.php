@@ -303,13 +303,12 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
     $sst = [
         'Pamela Valencia' => 'Pamela Valencia - Coordinadora de SST',
         'Johanna Findo' => 'Johanna Findo - Auxiliar SST',
-        ($empresaId === 8 ? 'Julián Guzmán' : 'Edward Zambrano') => ($empresaId === 8 ? 'Julián Guzmán - Auxiliar SST' : 'Edward Zambrano - Auxiliar SST'),
         'No hay visita por parte del área' => 'No aplica visita',
     ];
     $bpm = [
         'Fabián Salazar' => 'Fabián Salazar - Coordinador de Mejoramiento',
-        'Carlos Peña' => 'Carlos Peña - Supervisor de Calidad y Ambiental',
-        'Alejandro Noguera' => 'Alejandro Noguera - Aprendiz',
+        'Alejandro Noguera' => 'Alejandro Noguera - Supervisor de Calidad y Ambiental',
+        'Juan Diego Franco' => 'Juan Diego Franco - Aprendiz',
         'No hay visita por parte del área' => 'No aplica visita',
     ];
     $afluencia = ['BAJA' => 'AFLUENCIA BAJA', 'MODERADA' => 'AFLUENCIA MODERADA', 'ALTA' => 'AFLUENCIA ALTA'];
