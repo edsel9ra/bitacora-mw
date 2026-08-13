@@ -35,13 +35,7 @@ app_start_session();
                 <p>Ingresa tus credenciales para continuar</p>
             </div>
 
-<<<<<<< HEAD
             <form id="formLogin" method="post" autocomplete="off">
-=======
-            <div id="loginError" class="login-error" role="alert" hidden></div>
-
-            <form id="formLogin" method="post" action="bd/login.php">
->>>>>>> 00e14c1 (Version 2)
                 <?php echo app_csrf_input(); ?>
 
                 <div class="form-group">

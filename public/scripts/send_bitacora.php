@@ -35,7 +35,7 @@ if ($companyConfig === null) {
     exit;
 }
 
-$draftRequired = true;
+$draftRequired = trim((string) ($_POST['bitacora_action'] ?? 'send')) !== 'generate_pdf';
 
 if (($companyConfig['type'] ?? '') === 'supervision') {
     $draftContext = bit_submission_draft_context($empresaId, 'supervision', $draftRequired);

@@ -42,6 +42,15 @@ test_assert_same('2026-07-31', bit_normalize_pdf_date('31-07-2026'), 'bit_normal
 test_assert_same('2026-07-31', bit_normalize_pdf_date('2026-07-31'), 'bit_normalize_pdf_date Y-m-d');
 test_assert_same('Sin novedad', bit_report_display_value('No'), 'report exact No value');
 test_assert_same('No se reportaron casos', bit_report_display_value('No se reportaron casos'), 'report custom No phrase');
+test_assert_same(
+    ['to' => ['primary@example.test'], 'cc' => ['copy@example.test'], 'bcc' => []],
+    app_bitacora_normalize_recipients([
+        'to' => ['primary@example.test', 'PRIMARY@example.test'],
+        'cc' => ['copy@example.test', 'primary@example.test'],
+        'bcc' => ['copy@example.test'],
+    ]),
+    'recipient normalization removes cross-type duplicates'
+);
 test_assert_same('No se enviaron bolsas a otras sedes', bit_report_yes_no_value('No', 'No se enviaron bolsas a otras sedes'), 'negative answer uses detail only');
 test_assert_same('Sin novedad', bit_report_yes_no_value('No'), 'negative answer without detail');
 test_assert_same('Si. Detalle', bit_report_yes_no_value('Si', 'Detalle'), 'positive answer keeps detail prefix');

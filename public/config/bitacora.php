@@ -394,6 +394,27 @@ function app_bitacora_recipients_have_values(array $recipients): bool
     return false;
 }
 
+function app_bitacora_normalize_recipients(array $recipients): array
+{
+    $normalized = ['to' => [], 'cc' => [], 'bcc' => []];
+    $seen = [];
+
+    foreach (['to', 'cc', 'bcc'] as $type) {
+        foreach ((array) ($recipients[$type] ?? []) as $email) {
+            $email = trim((string) $email);
+            $key = strtolower($email);
+            if ($email === '' || isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $normalized[$type][] = $email;
+        }
+    }
+
+    return $normalized;
+}
+
 function app_bitacora_static_recipients_for_sede(array $config, string $sede): array
 {
     $recipients = $config['recipients'] ?? [];
@@ -415,22 +436,12 @@ function app_bitacora_recipients_for_sede(int $empresaId, string $sede): array
 
     $staticRecipients = app_bitacora_static_recipients_for_sede($config, $sede);
     $dbRecipients = app_bitacora_db_recipients($empresaId, $sede);
-    $merged = ['to' => [], 'cc' => [], 'bcc' => []];
-    foreach (['to', 'cc', 'bcc'] as $type) {
-        $seen = [];
-        foreach (array_merge($staticRecipients[$type] ?? [], $dbRecipients[$type] ?? []) as $email) {
-            $email = trim((string) $email);
-            $key = strtolower($email);
-            if ($email === '' || isset($seen[$key])) {
-                continue;
-            }
 
-            $seen[$key] = true;
-            $merged[$type][] = $email;
-        }
-    }
-
-    return $merged;
+    return app_bitacora_normalize_recipients([
+        'to' => array_merge($staticRecipients['to'] ?? [], $dbRecipients['to'] ?? []),
+        'cc' => array_merge($staticRecipients['cc'] ?? [], $dbRecipients['cc'] ?? []),
+        'bcc' => array_merge($staticRecipients['bcc'] ?? [], $dbRecipients['bcc'] ?? []),
+    ]);
 }
 
 function app_bitacora_recipient_type_priority(string $type): int
@@ -502,6 +513,8 @@ function app_bitacora_db_section_recipients(int $empresaId, string $sede): array
 
 function app_bitacora_add_recipient_list(PHPMailer $mail, array $recipients): void
 {
+    $recipients = app_bitacora_normalize_recipients($recipients);
+
     foreach (array_unique((array) ($recipients['to'] ?? [])) as $email) {
         $mail->addAddress($email);
     }
