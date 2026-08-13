@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../config/env.php';
 require_once __DIR__ . '/../config/bitacora.php';
+require_once __DIR__ . '/bitacora_pdf_helpers.php';
 
 function bit_e($s): string
 {
@@ -11,6 +12,24 @@ function bit_e($s): string
 function bit_h($s): string
 {
     return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
+}
+
+function bit_report_display_value(string $value): string
+{
+    $value = trim($value);
+    return $value === 'No' ? 'Sin novedad' : $value;
+}
+
+function bit_report_yes_no_value(string $answer, string $detail = ''): string
+{
+    $answer = trim($answer);
+    $detail = trim($detail);
+
+    if ($answer === 'No' && $detail !== '') {
+        return $detail;
+    }
+
+    return bit_report_display_value(trim($answer . ($detail !== '' ? '. ' . $detail : '')));
 }
 
 function bit_upper_clean(string $value): string
@@ -24,49 +43,6 @@ function bit_safe_filename(string $value): string
     $value = preg_replace('/[^\p{L}\p{N}\-_\. ]/u', '_', $value);
     $value = preg_replace('/\s+/', '_', $value);
     return trim($value, '_');
-}
-
-function bit_ensure_dir(string $dir): void
-{
-    if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
-        throw new RuntimeException('No fue posible crear el directorio de almacenamiento.');
-    }
-
-    if (!is_writable($dir)) {
-        throw new RuntimeException('El directorio de almacenamiento no tiene permisos de escritura.');
-    }
-}
-
-function bit_storage_base_dir(): string
-{
-    $baseDir = app_env('BITACORA_STORAGE_PATH', __DIR__ . '/../../storage/bitacoras_pdf');
-    return rtrim((string) $baseDir, '/\\');
-}
-
-function bit_pdf_logo_src(): string
-{
-    $logos = [
-        __DIR__ . '/../logo.png' => 'image/png',
-        __DIR__ . '/../logo.jpg' => 'image/jpeg',
-        __DIR__ . '/../resources/img/logo_app.png' => 'image/png',
-        __DIR__ . '/../resources/img/LOGO ALITAS-09.png' => 'image/png',
-        __DIR__ . '/../resources/img/ALITAS.png' => 'image/png',
-    ];
-
-    foreach ($logos as $path => $mime) {
-        if (!is_file($path) || !is_readable($path)) {
-            continue;
-        }
-
-        $contents = file_get_contents($path);
-        if ($contents === false) {
-            continue;
-        }
-
-        return 'data:' . $mime . ';base64,' . base64_encode($contents);
-    }
-
-    return '';
 }
 
 function bit_normalize_array_value($value): string
@@ -93,17 +69,11 @@ function bit_get_default_texts(): array
         'DEFAULT_TI'           => 'Sin novedades con los equipos.',
         'DEFAULT_TI1'          => 'Las facturas electrónicas se integran con código CUFE.',
         'DEFAULT_TI2'          => 'Sin novedades.',
-        'DEFAULT_TI3'          => 'No se reportan casos o solicitudes ni pendientes.',
-        'DEFAULT_GH'           => 'Sin novedad en Gestión Humana.',
-        'DEFAULT_SST'          => 'Sin novedades.',
-        'DEFAULT_MANT'         => 'No se presentan novedades.',
-        'DEFAULT_PE'           => 'No se presentaron novedades relacionadas a la planta eléctrica.',
+        'DEFAULT_SST'          => 'Sin novedad.',
+        'DEFAULT_PE'           => 'Sin novedad.',
         'DEFAULT_BH_ENVIADAS'  => 'No se enviaron bolsas a otras sedes.',
         'DEFAULT_BH_RECIBIDAS' => 'No se recibieron bolsas de otras sedes.',
         'DEFAULT_FACTURAS'     => 'No se anularon facturas.',
-        'DEFAULT_BONOS'        => 'No se canjearon bonos Coomeva.',
-        'DEFAULT_RESERVAS'     => 'No se realizaron reservas.',
-        'DEFAULT_EASYPEDIDO'   => 'No se realizaron pedidos por EasyPedido.',
     ];
 }
 
@@ -173,29 +143,15 @@ function bit_get_config(int $empresaId, string $sede): array
     $sede = bit_upper_clean($sede);
     $companyConfig = app_bitacora_config($empresaId) ?? [];
     $sections = app_bitacora_form_sections($empresaId, $companyConfig);
-    $config = [
+    return [
         'fields' => app_bitacora_collect_field_names($sections, $sede),
-        'sections' => [
-            'chetano' => false,
-            'torito' => false,
-            'reunion_calidad' => false,
-        ],
-        'dynamic_fields' => app_bitacora_dynamic_render_fields($sections, $sede),
+        'form_sections' => $sections,
+        'quantity_groups' => app_bitacora_collect_fields_by_type($sections, ['yes_no_quantity_group'], $sede),
+        'direct_quantity_groups' => app_bitacora_collect_fields_by_type($sections, ['quantity_group'], $sede),
+        'detail_groups' => app_bitacora_collect_fields_by_type($sections, ['yes_no_detail_group'], $sede),
+        'multiselect_detail_groups' => app_bitacora_collect_fields_by_type($sections, ['multiselect_detail_group'], $sede),
     ];
 
-    if (app_bitacora_extra_enabled($companyConfig, 'chetano', $sede)) {
-        $config['sections']['chetano'] = true;
-    }
-
-    if (app_bitacora_extra_enabled($companyConfig, 'torito', $sede)) {
-        $config['sections']['torito'] = true;
-    }
-
-    if (app_bitacora_extra_enabled($companyConfig, 'reunion_calidad', $sede)) {
-        $config['sections']['reunion_calidad'] = true;
-    }
-
-    return $config;
 }
 
 function bit_get_conditional_rules(array $defaults): array
@@ -204,26 +160,19 @@ function bit_get_conditional_rules(array $defaults): array
         ['radio' => 'visita_ss',         'field' => 'bpm1',    'default' => $defaults['DEFAULT_BPM']],
         ['radio' => 'visita_dagma',      'field' => 'bpm2',    'default' => $defaults['DEFAULT_BPM']],
         ['radio' => 'visita_west',       'field' => 'bpm3',    'default' => $defaults['DEFAULT_BPM']],
-        ['radio' => 'novedad_grameras',  'field' => 'bpm8',    'default' => $defaults['DEFAULT_BPM']],
+        ['radio' => 'visita_cp',         'field' => 'bpm4',    'default' => $defaults['DEFAULT_BPM']],
+        ['radio' => 'visita_acu',        'field' => 'bpm5',    'default' => $defaults['DEFAULT_BPM']],
 
         ['radio' => 'equipos_ti',        'field' => 'ti',      'default' => $defaults['DEFAULT_TI']],
         ['radio' => 'facturas_ti',       'field' => 'ti1',     'default' => $defaults['DEFAULT_TI1']],
         ['radio' => 'novedades_ti',      'field' => 'ti2',     'default' => $defaults['DEFAULT_TI2']],
-        ['radio' => 'casos_ti',          'field' => 'ti3',     'default' => $defaults['DEFAULT_TI3']],
 
         ['radio' => 'accidentes_sst',    'field' => 'sst1',    'default' => $defaults['DEFAULT_SST']],
         ['radio' => 'incapacidades_sst', 'field' => 'sst2',    'default' => $defaults['DEFAULT_SST']],
         ['radio' => 'ambiente_laboral',  'field' => 'sst3',    'default' => $defaults['DEFAULT_SST']],
         ['radio' => 'senal_sst',         'field' => 'sst4',    'default' => $defaults['DEFAULT_SST']],
         ['radio' => 'entrega_epp',       'field' => 'sst6',    'default' => $defaults['DEFAULT_SST']],
-        ['radio' => 'novedades_sst',     'field' => 'sst7',    'default' => $defaults['DEFAULT_SST']],
-        ['radio' => 'casos_sst',         'field' => 'sst8',    'default' => $defaults['DEFAULT_SST']],
-
-        ['radio' => 'equipos_cocina',    'field' => 'mant',    'default' => $defaults['DEFAULT_MANT']],
-        ['radio' => 'equipos_bar',       'field' => 'mant1',   'default' => $defaults['DEFAULT_MANT']],
-        ['radio' => 'equipos_salon',     'field' => 'mant2',   'default' => $defaults['DEFAULT_MANT']],
-        ['radio' => 'locativos',         'field' => 'mant3',   'default' => $defaults['DEFAULT_MANT']],
-        ['radio' => 'pendientes',        'field' => 'mant4',   'default' => $defaults['DEFAULT_MANT']],
+        ['radio' => 'novedades_sst',     'field' => 'sst8',    'default' => $defaults['DEFAULT_SST']],
 
         ['radio' => 'hielo_enviado',     'field' => 'hielo4',  'default' => $defaults['DEFAULT_BH_ENVIADAS']],
         ['radio' => 'hielo_recibido',    'field' => 'hielo5',  'default' => $defaults['DEFAULT_BH_RECIBIDAS']],
@@ -232,9 +181,6 @@ function bit_get_conditional_rules(array $defaults): array
         ['radio' => 'facturas_domic',    'field' => 'fa_dom',   'default' => $defaults['DEFAULT_FACTURAS']],
         ['radio' => 'facturas_rappi',    'field' => 'fa_rappi', 'default' => $defaults['DEFAULT_FACTURAS']],
 
-        ['radio' => 'bonos_coomeva',     'field' => 'tesor1',  'default' => $defaults['DEFAULT_BONOS']],
-        ['radio' => 'reservas_15',       'field' => 'mer4',    'default' => $defaults['DEFAULT_RESERVAS']],
-        ['radio' => 'easypedido',        'field' => 'tesor2',  'default' => $defaults['DEFAULT_EASYPEDIDO']],
     ];
 }
 
@@ -254,6 +200,92 @@ function bit_apply_conditional_defaults(array &$post, array $rules): void
     }
 }
 
+function bit_selected_values($value): array
+{
+    $values = is_array($value) ? $value : ($value === null || $value === '' ? [] : [$value]);
+    $values = array_map(static fn($item) => trim((string) $item), $values);
+    $values = array_filter($values, static fn($item) => $item !== '');
+
+    return array_values(array_unique($values));
+}
+
+function bit_multiselect_detail_name(array $field): string
+{
+    $name = (string) ($field['name'] ?? '');
+    return (string) ($field['detail_name'] ?? ($name . '_detalles'));
+}
+
+function bit_multiselect_detail_no_apply(array $field): string
+{
+    return (string) ($field['no_apply_value'] ?? 'No aplica visita');
+}
+
+function bit_multiselect_detail_rows_from_post(array $post, array $field): array
+{
+    $detailName = bit_multiselect_detail_name($field);
+    $rawRows = $post[$detailName] ?? [];
+    if (!is_array($rawRows)) {
+        return [];
+    }
+
+    $rows = [];
+    foreach ($rawRows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+
+        $visitor = trim((string) ($row['visitante'] ?? ''));
+        if ($visitor === '') {
+            continue;
+        }
+
+        $rows[$visitor] = [
+            'visitante' => $visitor,
+            'hora_inicio' => trim((string) ($row['hora_inicio'] ?? '')),
+            'hora_final' => trim((string) ($row['hora_final'] ?? '')),
+            'actividades' => trim((string) ($row['actividades'] ?? '')),
+        ];
+    }
+
+    return $rows;
+}
+
+function bit_normalize_multiselect_detail_groups(array $post, array $groups): array
+{
+    $result = [];
+
+    foreach ($groups as $field) {
+        $name = (string) ($field['name'] ?? '');
+        if ($name === '') {
+            continue;
+        }
+
+        $selected = bit_selected_values($post[$name] ?? []);
+        $noApply = bit_multiselect_detail_no_apply($field);
+        $isNoApply = in_array($noApply, $selected, true);
+        $detailRows = bit_multiselect_detail_rows_from_post($post, $field);
+        $items = [];
+
+        if (!$isNoApply) {
+            foreach ($selected as $visitor) {
+                if ($visitor === $noApply || !isset($detailRows[$visitor])) {
+                    continue;
+                }
+
+                $items[] = $detailRows[$visitor];
+            }
+        }
+
+        $result[$name] = [
+            'selected' => $selected,
+            'no_apply' => $isNoApply,
+            'items' => $items,
+        ];
+    }
+
+    return $result;
+}
+
 function bit_normalize_data(array $post, array $config): array
 {
     $data = [];
@@ -267,6 +299,7 @@ function bit_normalize_data(array $post, array $config): array
     $data['cargo']       = trim((string)($data['cargo'] ?? ''));
 
     $data['fecha'] = '';
+    $data['fecha_iso'] = trim((string) ($post['fechab'] ?? ''));
     if (!empty($post['fechab'])) {
         $timestamp = strtotime((string)$post['fechab']);
         if ($timestamp !== false) {
@@ -274,26 +307,19 @@ function bit_normalize_data(array $post, array $config): array
         }
     }
 
+    $data['_multiselect_detail_groups'] = bit_normalize_multiselect_detail_groups($post, $config['multiselect_detail_groups'] ?? []);
+
     return $data;
 }
 
 function bit_render_detail(string $title, string $value, bool $mostrarSiVacio = false): string
 {
-    $value = trim((string)$value);
+    $value = bit_report_display_value($value);
 
     if (!$mostrarSiVacio && $value === '') {
         return '';
     }
     return '<div class="sub-item"><strong>' . bit_h($title) . ':</strong> ' . bit_e($value) . '</div>';
-}
-
-function bit_render_detail_if(bool $condition, string $title, string $value, bool $mostrarSiVacio = false): string
-{
-    if (!$condition) {
-        return '';
-    }
-
-    return bit_render_detail($title, $value, $mostrarSiVacio);
 }
 
 function bit_render_section(string $title, array $rows): string
@@ -315,38 +341,264 @@ function bit_render_section(string $title, array $rows): string
     return $html;
 }
 
+function bit_render_subsection(array $field): string
+{
+    $title = trim((string) ($field['label'] ?? ''));
+    if ($title === '') {
+        return '';
+    }
+
+    $description = trim((string) ($field['description'] ?? ''));
+    $html = '<div class="report-subsection" style="margin:10px 0 8px;padding:8px 10px;border-left:4px solid #8B1E1E;background:#f6f6f8;page-break-inside:avoid;">';
+    $html .= '<div style="font-weight:bold;color:#8B1E1E;">' . bit_h($title) . '</div>';
+    if ($description !== '') {
+        $html .= '<div style="margin-top:3px;color:#555;font-size:12px;line-height:1.4;">' . bit_e($description) . '</div>';
+    }
+    return $html . '</div>';
+}
+
+function bit_render_group_item(array $field, int $index, array $data): string
+{
+    $groupName = (string) ($field['name'] ?? '');
+    $itemLabel = (string) ($field['item_label'] ?? 'Registro');
+    $rows = [];
+
+    foreach ((array) ($field['fields'] ?? []) as $itemField) {
+        $itemFieldName = (string) ($itemField['name'] ?? '');
+        if ($groupName === '' || $itemFieldName === '') {
+            continue;
+        }
+
+        $name = app_bitacora_group_item_field_name($groupName, $index, $itemFieldName);
+        $label = (string) ($itemField['label'] ?? $itemFieldName);
+        $value = bit_report_display_value((string) ($data[$name] ?? ''));
+
+        if ($value !== '') {
+            $rows[] = '<div class="sub-item"><strong>' . bit_h($label) . ':</strong> ' . bit_e($value) . '</div>';
+        }
+    }
+
+    if ($rows === []) {
+        return '';
+    }
+
+    return '<div class="sub-item"><strong>' . bit_h($itemLabel . ' ' . $index) . ':</strong><div style="margin-left:12px; margin-top:4px;">' . implode('', $rows) . '</div></div>';
+}
+
+function bit_render_quantity_group(array $field, array $data): array
+{
+    if (!app_bitacora_field_available_for_date($field, (string) ($data['fecha_iso'] ?? ''))) {
+        return [];
+    }
+
+    $name = (string) ($field['name'] ?? '');
+    $label = (string) ($field['label'] ?? $name);
+    $quantityName = (string) ($field['quantity_name'] ?? ($name . '_cantidad'));
+    $answer = trim((string) ($data[$name] ?? ''));
+    $renderAnswer = $answer === 'No'
+        ? (trim((string) ($field['no_report_value'] ?? '')) ?: 'Sin novedad')
+        : ($answer !== '' ? $answer : 'No diligenciado');
+    $rows = [bit_render_detail($label, $renderAnswer, true)];
+
+    if ($answer !== 'Si') {
+        return $rows;
+    }
+
+    $quantity = (int) ($data[$quantityName] ?? 0);
+    $max = max(1, min(10, (int) ($field['max'] ?? 10)));
+    $quantity = max(0, min($quantity, $max));
+
+    if ($quantity > 0) {
+        foreach (range(1, $quantity) as $index) {
+            $rows[] = bit_render_group_item($field, $index, $data);
+        }
+    }
+
+    return $rows;
+}
+
+function bit_render_direct_quantity_group(array $field, array $data): array
+{
+    if (!app_bitacora_field_available_for_date($field, (string) ($data['fecha_iso'] ?? ''))) {
+        return [];
+    }
+
+    $name = (string) ($field['name'] ?? '');
+    $label = (string) ($field['label'] ?? $name);
+    $quantityName = (string) ($field['quantity_name'] ?? ($name . '_cantidad'));
+    $rawQuantity = trim((string) ($data[$quantityName] ?? ''));
+    if ($rawQuantity === '') {
+        return [bit_render_detail($label, 'No diligenciado', true)];
+    }
+
+    $max = max(1, min(10, (int) ($field['max'] ?? 10)));
+    $quantity = max(0, min((int) $rawQuantity, $max));
+    if ($quantity === 0) {
+        $zeroValue = trim((string) ($field['zero_report_value'] ?? '')) ?: 'Sin registros';
+        return [bit_render_detail($label, $zeroValue, true)];
+    }
+
+    $rows = [bit_render_detail($label, (string) $quantity, true)];
+    foreach (range(1, $quantity) as $index) {
+        $rows[] = bit_render_group_item($field, $index, $data);
+    }
+    return $rows;
+}
+
+function bit_render_detail_group(array $field, array $data): array
+{
+    if (!app_bitacora_field_available_for_date($field, (string) ($data['fecha_iso'] ?? ''))) {
+        return [];
+    }
+
+    $name = (string) ($field['name'] ?? '');
+    $label = (string) ($field['label'] ?? $name);
+    $answer = trim((string) ($data[$name] ?? ''));
+    $renderAnswer = $answer === 'No' ? 'Sin novedad' : ($answer !== '' ? $answer : 'No diligenciado');
+    $rows = [bit_render_detail($label, $renderAnswer, true)];
+
+    if ($answer !== 'Si') {
+        return $rows;
+    }
+
+    foreach ((array) ($field['fields'] ?? []) as $detailField) {
+        $detailFieldName = (string) ($detailField['name'] ?? '');
+        if ($detailFieldName === '') {
+            continue;
+        }
+
+        $name = app_bitacora_detail_group_field_name((string) ($field['name'] ?? ''), $detailFieldName);
+        $label = (string) ($detailField['label'] ?? $detailFieldName);
+        $rows[] = bit_render_detail($label, $data[$name] ?? '');
+    }
+
+    return $rows;
+}
+
+function bit_render_multiselect_detail_group(array $field, array $data): array
+{
+    $name = (string) ($field['name'] ?? '');
+    $label = (string) ($field['label'] ?? 'Visitas');
+    $groupData = $data['_multiselect_detail_groups'][$name] ?? null;
+
+    if (!is_array($groupData)) {
+        return [];
+    }
+
+    if (!empty($groupData['no_apply'])) {
+        return [bit_render_detail($label, 'Sin novedad', true)];
+    }
+
+    $rows = [];
+    foreach ((array) ($groupData['items'] ?? []) as $item) {
+        $visitor = trim((string) ($item['visitante'] ?? ''));
+        if ($visitor === '') {
+            continue;
+        }
+
+        $rows[] = '<div class="sub-item"><strong>' . bit_h($visitor) . '</strong><div style="margin-left:12px; margin-top:4px;">' .
+            bit_render_detail('Hora ingreso', (string) ($item['hora_inicio'] ?? '')) .
+            bit_render_detail('Hora salida', (string) ($item['hora_final'] ?? '')) .
+            bit_render_detail('Actividades realizadas', (string) ($item['actividades'] ?? '')) .
+            '</div></div>';
+    }
+
+    return $rows;
+}
+
+function bit_render_schema_field_rows(array $field, array $data): array
+{
+    if (!app_bitacora_field_available_for_date($field, (string) ($data['fecha_iso'] ?? ''))) {
+        return [];
+    }
+
+    $type = (string) ($field['type'] ?? 'text');
+    if ($type === 'subsection') {
+        return [bit_render_subsection($field)];
+    }
+    if ($type === 'yes_no_quantity_group') {
+        return bit_render_quantity_group($field, $data);
+    }
+    if ($type === 'quantity_group') {
+        return bit_render_direct_quantity_group($field, $data);
+    }
+    if ($type === 'yes_no_detail_group') {
+        return bit_render_detail_group($field, $data);
+    }
+    if ($type === 'multiselect_detail_group') {
+        return bit_render_multiselect_detail_group($field, $data);
+    }
+
+    $name = (string) ($field['name'] ?? '');
+    if ($name === '') {
+        return [];
+    }
+
+    $label = (string) ($field['label'] ?? $name);
+    if ($type === 'plant') {
+        $answer = trim((string) ($data[$name] ?? ''));
+        $rows = [bit_render_detail($label, $answer !== '' ? $answer : 'No diligenciado', true)];
+        if ($answer === 'Si') {
+            $rows[] = bit_render_detail('Hora encendido', (string) ($data['mant5'] ?? ''));
+            $rows[] = bit_render_detail('Hora apagado', (string) ($data['mant6'] ?? ''));
+            $rows[] = bit_render_detail('Tiempo de uso (minutos)', (string) ($data['mant7'] ?? ''));
+        }
+        return $rows;
+    }
+
+    $value = trim((string) ($data[$name] ?? ''));
+    if ($name === 'fechab') {
+        $value = trim((string) ($data['fecha'] ?? $value));
+    }
+    if ($type === 'yes_no' || $type === 'simple_radio') {
+        if ($value === '') {
+            return [];
+        }
+        $detailName = (string) ($field['detail_name'] ?? '');
+        $detail = $detailName !== '' ? trim((string) ($data[$detailName] ?? '')) : '';
+        $value = bit_report_yes_no_value($value, $detail);
+    }
+
+    $suffix = (string) ($field['suffix'] ?? '');
+    if ($value !== '' && $suffix !== '') {
+        $value .= ' ' . $suffix;
+    }
+    return [bit_render_detail($label, $value)];
+}
+
+function bit_render_schema_sections(array $sections, array $data, array $excludedKeys = [], array $excludedFieldNames = []): string
+{
+    $html = '';
+    $excluded = array_flip($excludedKeys);
+    $excludedFields = array_flip($excludedFieldNames);
+    $sede = (string) ($data['sede'] ?? '');
+
+    foreach ($sections as $section) {
+        $sectionKey = (string) ($section['key'] ?? '');
+        if (isset($excluded[$sectionKey]) || !app_bitacora_field_visible_for_sede($section, $sede)) {
+            continue;
+        }
+
+        $rows = [];
+        foreach ((array) ($section['fields'] ?? []) as $field) {
+            if (isset($excludedFields[(string) ($field['name'] ?? '')])) {
+                continue;
+            }
+            if (!app_bitacora_field_visible_for_sede($field, $sede)) {
+                continue;
+            }
+            $rows = array_merge($rows, bit_render_schema_field_rows($field, $data));
+        }
+        $html .= bit_render_section((string) ($section['title'] ?? $sectionKey), $rows);
+    }
+
+    return $html;
+}
+
 function bit_render_html(array $data, array $config, bool $includeLogo = false): string
 {
-    $tieneSupervision = !empty(trim($data['supervisores'] ?? ''));
-    $usoPlanta = trim((string) ($data['planta_elect'] ?? '')) === 'Si';
-    $tieneTeamCalidad = !empty(trim($data['equipo_bpm']));
     $logoSrc = $includeLogo ? bit_pdf_logo_src() : '';
     $logoHtml = $logoSrc !== '' ? '<td class="logo-cell"><img class="logo" src="' . bit_h($logoSrc) . '" alt="Logo"></td>' : '';
-    
-    $chetanoSection = '';
-    if (!empty($config['sections']['chetano'])) {
-        $chetanoSection = bit_render_section('CHETANO', [
-            bit_render_detail('Novedades Chetano', $data['nov_chetano'] ?? ''),
-            bit_render_detail('Venta de Productos', $data['ventas_chetano'] ?? ''),
-            bit_render_detail('Venta Domicilios', $data['dom_chetano'] ?? ''),
-            bit_render_detail('Materias Primas', $data['mp_chetano'] ?? ''),
-        ]);
-    }
-
-    $toritoSection = '';
-    if (!empty($config['sections']['torito'])) {
-        $toritoSection = bit_render_section('TORITO', [
-            bit_render_detail('Novedades Torito', $data['nov_torito'] ?? ''),
-            bit_render_detail('Venta de Productos', $data['ventas_torito'] ?? ''),
-        ]);
-    }
-
-    $reunionCalidadSection = '';
-    if (!empty($config['sections']['reunion_calidad'])) {
-        $reunionCalidadSection = bit_render_section('REUNIÓN DE CALIDAD 3:00 P.M.', [
-            bit_render_detail('Novedades', $data['reu'] ?? ''),
-        ]);
-    }
 
     $html = '
     <html>
@@ -418,282 +670,143 @@ function bit_render_html(array $data, array $config, bool $includeLogo = false):
             </td></tr></table>
         </div>';
 
-    
-    $html .= bit_render_section('OPERACIONES', [
-        bit_render_detail('Servicio al cliente', $data['sac'] ?? ''),
-        bit_render_detail('Visita de Entrenadores/Supervisores', $data['supervisores'] ?? ''),
-        bit_render_detail_if($tieneSupervision, 'Hora de ingreso de la entrenadora/supervisora/coordinador', $data['hora_entrada'] ?? ''),
-        bit_render_detail_if($tieneSupervision, 'Hora de salida de la entrenadora/supervisora/coordinador', $data['hora_salida'] ?? ''),
-        bit_render_detail_if($tieneSupervision, 'Actividades Realizadas', $data['act_sup'] ?? ''),
-        bit_render_detail('Devoluciones', $data['devo'] ?? ''),
-    ]);
-    
-    $html .= bit_render_section('AFLUENCIA DE COMENSALES', [
-        bit_render_detail('Medio día', $data['comens'] ?? ''),
-        bit_render_detail('Tarde', $data['comens1'] ?? ''),
-        bit_render_detail('Noche', $data['comens2'] ?? ''),
-    ]);
-    
-    $html .= bit_render_section('OBSERVACIONES DE JEFES', [
-        bit_render_detail('Mesas', $data['mesas'] ?? ''),
-        bit_render_detail('Bar', $data['bar'] ?? ''),
-        bit_render_detail('Cocina', $data['cocina'] ?? ''),
-    ]);
+    $html .= bit_render_schema_sections((array) ($config['form_sections'] ?? []), $data, [], ['fechab', 'sede', 'responsable', 'cargo']);
+    return $html . '</body></html>';
 
-    $html .= bit_render_section('MERCADEO', [
-        bit_render_detail('Venta de Coctelería', $data['coc'] ?? ''),
-        bit_render_detail('Venta de Productos Foco', $data['mer'] ?? ''),
-        bit_render_detail('Ventas de Productos Nuevos', $data['mer1'] ?? ''),
-        bit_render_detail('Campañas del Mes', $data['mer2'] ?? ''),
-        bit_render_detail('Casos HelpDesk', $data['mer3'] ?? ''),
-        bit_render_detail('Reservas', $data['mer4'] ?? ''),
-    ]);
-
-    $html .= bit_render_section('GESTIÓN HUMANA', [
-        bit_render_detail('Novedades', $data['gh'] ?? ''),
-    ]);
-
-    $html .= bit_render_section('SEGURIDAD Y SALUD EN EL TRABAJO - SST', [
-        bit_render_detail('Eventos por incidentes laborales, accidentes laborales y de transito', $data['sst1'] ?? ''),
-        bit_render_detail('Incapacidades iguales o mayores a 15 días', $data['sst2'] ?? ''),
-        bit_render_detail('Hallazgos Ambiente Laboral', $data['sst3'] ?? ''),
-        bit_render_detail('Reportes de extintores y señalización', $data['sst4'] ?? ''),
-        bit_render_detail('Entrega de EPP', $data['sst6'] ?? ''),
-        bit_render_detail('Visita a la sede del equipo SST', $data['equipo_sst'] ?? ''),
-        bit_render_detail('Actividades de Acompañamiento', $data['sst5'] ?? ''),
-        bit_render_detail('Otras Novedades (Situaciones de Salud, Condiciones y actos inseguros, etc)', $data['sst7'] ?? ''),
-        bit_render_detail('Casos HelpDesk SST', $data['sst8'] ?? ''),
-    ]);
-
-    $html .= bit_render_section('SISTEMAS - TI', [
-        bit_render_detail('Equipos de Cómputo', $data['ti'] ?? ''),
-        bit_render_detail('Facturas FE', $data['ti1'] ?? ''),
-        bit_render_detail('Otras Novedades', $data['ti2'] ?? ''),
-        bit_render_detail('Casos HelpDesk', $data['ti3'] ?? ''),
-    ]);
-
-    $html .= bit_render_section('MANTENIMIENTO', [
-        bit_render_detail('Equipos Cocina', $data['mant'] ?? ''),
-        bit_render_detail('Equipos Bar', $data['mant1'] ?? ''),
-        bit_render_detail('Equipos Salón', $data['mant2'] ?? ''),
-        bit_render_detail('Locativos', $data['mant3'] ?? ''),
-        bit_render_detail('Uso de planta eléctrica', $data['planta_elect'] ?? ''),
-        bit_render_detail_if($usoPlanta, 'Hora encendido', $data['mant5'] ?? ''),
-        bit_render_detail_if($usoPlanta, 'Hora apagado', $data['mant6'] ?? ''),
-        bit_render_detail_if($usoPlanta, 'Tiempo de uso (minutos)', $data['mant7'] ?? ''),
-        bit_render_detail_if($usoPlanta, 'Novedades Planta Eléctrica', $data['mant8'] ?? ''),
-        bit_render_detail('Pendientes', $data['mant4'] ?? ''),
-    ]);
-
-    $html .= bit_render_section('MEJORAMIENTO Y ESTANDARIZACIÓN', [
-        bit_render_detail('Visita a la sede del equipo', $data['equipo_bpm'] ?? ''),
-        bit_render_detail_if($tieneTeamCalidad, 'Actividades durante la visita', $data['bpm'] ?? ''),
-        bit_render_detail('¿Hubo visita de la Secretaría de Salud?',$data['visita_ss'].'. '.$data['bpm1'] ?? ''),
-        bit_render_detail('¿Hubo visita del DAGMA?', $data['visita_dagma'].'. '.$data['bpm2'] ?? ''),
-        bit_render_detail('¿Hubo visita del proveedor West - Klaxen?', $data['visita_west'].'. '.$data['bpm3'] ?? ''),
-        bit_render_detail('Entrega de ACU', $data['bpm4'] ?? ''),
-        bit_render_detail('Entrega de residuos aprovechables', $data['bpm5'] ?? ''),
-        bit_render_detail('Entrega de residuos orgánicos', $data['bpm6'] ?? ''),
-        bit_render_detail('Control de plagas', $data['bpm7'] ?? ''),
-        bit_render_detail('¿Novedades con grameras y/o termómetros? ', $data['novedad_grameras'].'. '.$data['bpm8'] ?? ''),
-    ]);
-    
-    $html .= bit_render_section('ÁREA DE BAR', [
-        bit_render_detail('Producción de Bolsas en el día', $data['hielo'].' bolsas' ?? ''),
-        bit_render_detail('Compra de Hielo Kolbitos', $data['hielo1'].' bolsas' ?? ''),
-        bit_render_detail('Consumo Bolsas del día', $data['hielo2'].' bolsas' ?? ''),
-        bit_render_detail('Inventario Final de Bolsas de hielo/día', $data['hielo3'].' bolsas' ?? ''),
-        bit_render_detail('Hielo trasladado a otra sede', $data['hielo4'] ?? ''),
-        bit_render_detail('Hielo recibido otra sede', $data['hielo5'] ?? ''),
-    ]);
-    
-    $html .= bit_render_section('DESPENSA', [
-        bit_render_detail('Novedades', $data['desp'] ?? ''),
-    ]);
-    
-    $html .= bit_render_section('NOVEDADES DOMICILIOS', [
-        bit_render_detail('RAPPI', $data['dorp'] ?? ''),
-        bit_render_detail('Domicilios Propios', $data['dorp1'] ?? ''),
-    ]);
-
-    $html .= bit_render_section('TESORERÍA', [
-        bit_render_detail('Novedades', $data['tesor'] ?? ''),
-        bit_render_detail('Bonos Coomeva', $data['tesor1'] ?? ''),
-        bit_render_detail('Pagos EasyPedido', $data['tesor2'] ?? ''),
-    ]);
-    
-    $html .= bit_render_section('FACTURAS ANULADAS', [
-        bit_render_detail('Mesas', $data['fa_mesas'] ?? ''),
-        bit_render_detail('Domicilios', $data['fa_dom'] ?? ''),
-        bit_render_detail('RAPPI', $data['fa_rappi'] ?? ''),
-    ]);
-    
-    $html .= bit_render_section('MÉTRICAS DE SERVICIO', [
-        bit_render_detail('Nº ordenes Rappi', $data['rappi'] ?? ''),
-        bit_render_detail('Nº domicilios', $data['domi'] ?? ''),
-        bit_render_detail('Nº domiciliarios de DomiExpress', $data['domiexpress'] ?? ''),
-        bit_render_detail('Nº horas trabajadas DomiExpress', $data['hdomi'] ?? ''),
-    ]);
-    
-    $html .= bit_render_section('INDICADORES DE DESEMPEÑO', [
-        bit_render_detail('Cumplimiento Presupuesto Diario', $data['pd'].'%' ?? ''),
-        bit_render_detail('Nº Ticket Promedio', '$'.$data['tp'] ?? ''),
-        
-    ]);
-
-    $html .= $chetanoSection;
-    $html .= $toritoSection;
-    $html .= $reunionCalidadSection;
-
-    $dynamicBySection = [];
-    foreach ((array) ($config['dynamic_fields'] ?? []) as $field) {
-        $sectionTitle = (string) ($field['section_title'] ?? 'Campos adicionales');
-        $type = (string) ($field['type'] ?? 'text');
-        $label = (string) ($field['label'] ?? $field['name'] ?? 'Campo');
-        $name = (string) ($field['name'] ?? '');
-        $suffix = (string) ($field['suffix'] ?? '');
-
-        if ($name === '') {
-            continue;
-        }
-
-        if ($type === 'yes_no') {
-            $detailName = (string) ($field['detail_name'] ?? '');
-            $value = trim((string) ($data[$name] ?? ''));
-            $detail = $detailName !== '' ? trim((string) ($data[$detailName] ?? '')) : '';
-            $renderValue = trim($value . ($detail !== '' ? '. ' . $detail : ''));
-        } else {
-            $renderValue = trim((string) ($data[$name] ?? ''));
-            if ($renderValue !== '' && $suffix !== '') {
-                $renderValue .= ' ' . $suffix;
-            }
-        }
-
-        $dynamicBySection[$sectionTitle][] = bit_render_detail($label, $renderValue);
-    }
-
-    foreach ($dynamicBySection as $sectionTitle => $rows) {
-        $html .= bit_render_section($sectionTitle, $rows);
-    }
-
-    $html .= '
-    </body>
-    </html>';
-
-    return $html;
 }
 
-function bit_find_dompdf_autoload(): ?string
+function bit_register_envio(
+    int $empresaId,
+    string $sede,
+    string $fecha,
+    string $responsable,
+    string $usuario,
+    string $tipoFormulario,
+    ?string $submissionKey = null,
+    ?string $requestHash = null,
+    ?PDO $pdo = null
+): ?int
 {
-    $paths = [
-        __DIR__ . '/../vendor/autoload.php',
-        __DIR__ . '/../dompdf/autoload.inc.php',
-        __DIR__ . '/vendor/autoload.php',
-        __DIR__ . '/dompdf/autoload.inc.php',
-    ];
-
-    foreach ($paths as $path) {
-        if (file_exists($path)) {
-            return $path;
-        }
-    }
-
-    return null;
-}
-
-function bit_build_pdf_info(int $empresaId, string $sede, string $fecha, string $responsable): array
-{
-    $year  = date('Y');
-    $month = date('m');
-
-    $baseDir = bit_storage_base_dir() . '/' . $empresaId . '/' . $year . '/' . $month;
-    bit_ensure_dir($baseDir);
-
-    $fileName = 'BITACORA_' .
-        bit_safe_filename($sede ?: 'SIN_SEDE') . '_' .
-        bit_safe_filename($fecha ?: date('d-m-Y')) . '_' .
-        bit_safe_filename($responsable ?: 'SIN_RESPONSABLE') . '.pdf';
-
-    return [
-        'dir'       => $baseDir,
-        'path'      => $baseDir . '/' . $fileName,
-        'fileName'  => $fileName,
-        'year'      => $year,
-        'month'     => $month,
-        'empresaId' => $empresaId,
-    ];
-}
-
-function bit_generate_pdf(string $html, string $outputPath): void
-{
-    $autoload = bit_find_dompdf_autoload();
-    $tempDir = bit_storage_base_dir() . '/tmp';
-    bit_ensure_dir($tempDir);
-
-    if ($autoload === null) {
-        throw new RuntimeException('No se encontró Dompdf. Instala la librería antes de usar la generación PDF.');
-    }
-
-    require_once $autoload;
-
-    if (class_exists(\Mpdf\Mpdf::class)) {
-        $mpdf = new \Mpdf\Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4',
-            'margin_top' => 13,
-            'margin_bottom' => 13,
-            'margin_left' => 11,
-            'margin_right' => 11,
-            'tempDir' => $tempDir,
+    $externalPdo = $pdo !== null;
+    try {
+        require_once __DIR__ . '/../bd/conexion.php';
+        $pdo = $pdo ?? Conexion::Conectar();
+        $stmt = $pdo->prepare('
+            INSERT INTO bitacora_envios
+                (idEmpresa, sede, fecha_bitacora, usuario, responsable, tipo_formulario, submission_key, request_hash)
+            VALUES
+                (:idEmpresa, :sede, :fecha_bitacora, :usuario, :responsable, :tipo_formulario, :submission_key, :request_hash)
+        ');
+        $stmt->execute([
+            'idEmpresa' => $empresaId,
+            'sede' => $sede,
+            'fecha_bitacora' => bit_normalize_pdf_date($fecha),
+            'usuario' => $usuario,
+            'responsable' => $responsable !== '' ? $responsable : null,
+            'tipo_formulario' => $tipoFormulario,
+            'submission_key' => $submissionKey,
+            'request_hash' => $requestHash,
         ]);
-        $mpdf->WriteHTML($html);
-        $mpdf->Output($outputPath, 'F');
+
+        return (int) $pdo->lastInsertId();
+    } catch (Throwable $e) {
+        if ($externalPdo) {
+            throw $e;
+        }
+        error_log('No fue posible registrar envio de bitacora: ' . $e->getMessage());
+        return null;
+    }
+}
+
+function bit_update_envio(?int $envioId, array $data, ?PDO $pdo = null): void
+{
+    if ($envioId === null || $envioId <= 0) {
         return;
     }
 
-    if (!class_exists(\Dompdf\Dompdf::class)) {
-        throw new RuntimeException('No hay una librería PDF disponible después de cargar el autoload.');
+    $estado = (string) ($data['estado'] ?? 'procesando');
+    if (!in_array($estado, ['procesando', 'pendiente', 'completado', 'parcial', 'fallido'], true)) {
+        $estado = 'procesando';
     }
 
-    $options = new \Dompdf\Options();
-    $options->set('isRemoteEnabled', true);
-    $options->set('defaultFont', 'DejaVu Sans');
-    $options->set('tempDir', $tempDir);
-
-    $dompdf = new \Dompdf\Dompdf($options);
-    $dompdf->loadHtml($html, 'UTF-8');
-    $dompdf->setPaper('A4', 'portrait');
-    $dompdf->render();
-
-    file_put_contents($outputPath, $dompdf->output());
+    $externalPdo = $pdo !== null;
+    try {
+        require_once __DIR__ . '/../bd/conexion.php';
+        $pdo = $pdo ?? Conexion::Conectar();
+        $stmt = $pdo->prepare('
+            UPDATE bitacora_envios
+            SET estado = :estado,
+                correo_enviado = :correo_enviado,
+                pdf_generado = :pdf_generado,
+                correos_seccion_enviados = :correos_seccion_enviados,
+                pdf_id = :pdf_id,
+                error_mensaje = :error_mensaje
+            WHERE id = :id
+        ');
+        $stmt->execute([
+            'estado' => $estado,
+            'correo_enviado' => !empty($data['correo_enviado']) ? 1 : 0,
+            'pdf_generado' => !empty($data['pdf_generado']) ? 1 : 0,
+            'correos_seccion_enviados' => max(0, (int) ($data['correos_seccion_enviados'] ?? 0)),
+            'pdf_id' => !empty($data['pdf_id']) ? (int) $data['pdf_id'] : null,
+            'error_mensaje' => isset($data['error_mensaje']) && trim((string) $data['error_mensaje']) !== '' ? (string) $data['error_mensaje'] : null,
+            'id' => $envioId,
+        ]);
+    } catch (Throwable $e) {
+        if ($externalPdo) {
+            throw $e;
+        }
+        error_log('No fue posible actualizar envio de bitacora: ' . $e->getMessage());
+    }
 }
 
-function bit_add_recipients_by_sede(\PHPMailer\PHPMailer\PHPMailer $mail, string $sede): void
+function bit_mail_async_enabled(): bool
 {
-    $sede = bit_upper_clean($sede);
+    return app_env_bool('BITACORA_MAIL_ASYNC', false);
+}
 
-    /*switch ($sede) {
-        case 'PANCE':
-            $mail->addAddress('adminpance@misterwings.com');
-            $mail->addAddress('pance@misterwings.com');
-            break;
+function bit_enqueue_email(
+    ?int $envioId,
+    int $empresaId,
+    string $sede,
+    string $usuario,
+    string $subject,
+    string $bodyHtml,
+    array $recipients,
+    array $attachments = [],
+    ?PDO $pdo = null,
+    string $jobType = 'main'
+): ?int
+{
+    if (!in_array($jobType, ['main', 'section'], true)) {
+        throw new InvalidArgumentException('El tipo de trabajo de correo no es válido.');
+    }
+    $externalPdo = $pdo !== null;
+    try {
+        require_once __DIR__ . '/../bd/conexion.php';
+        $pdo = $pdo ?? Conexion::Conectar();
+        $stmt = $pdo->prepare('
+            INSERT INTO bitacora_email_queue (idEnvio, idEmpresa, sede, usuario, subject, body_html, recipients_json, attachments_json, job_type)
+            VALUES (:idEnvio, :idEmpresa, :sede, :usuario, :subject, :body_html, :recipients_json, :attachments_json, :job_type)
+        ');
+        $stmt->execute([
+            'idEnvio' => $envioId,
+            'idEmpresa' => $empresaId,
+            'sede' => $sede,
+            'usuario' => $usuario,
+            'subject' => mb_substr($subject, 0, 255, 'UTF-8'),
+            'body_html' => $bodyHtml,
+            'recipients_json' => json_encode($recipients, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'attachments_json' => $attachments === [] ? null : json_encode($attachments, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'job_type' => $jobType,
+        ]);
 
-        case 'CIUDAD JARDÍN':
-            $mail->addAddress('adminciudadjardin@misterwings.com');
-            $mail->addAddress('ciudadjardin@misterwings.com');
-            break;
-
-        case 'JARDÍN PLAZA':
-            $mail->addAddress('adminjardinplaza@misterwings.com');
-            $mail->addAddress('jardinplaza@misterwings.com');
-            break;
-
-        case 'BOCHALEMA':
-            $mail->addAddress('adminbochalema@misterwings.com');
-            $mail->addAddress('coor.bochalema@misterwings.com');
-            $mail->addAddress('bochalema@misterwings.com');
-            break;
-    }*/
-
-    $mail->addBCC('coordinador.sistemas@misterwings.com');
+        return (int) $pdo->lastInsertId();
+    } catch (Throwable $e) {
+        if ($externalPdo) {
+            throw $e;
+        }
+        error_log('No fue posible encolar correo de bitacora: ' . $e->getMessage());
+        return null;
+    }
 }

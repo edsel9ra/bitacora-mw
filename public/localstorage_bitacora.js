@@ -1,449 +1,675 @@
-$(document).ready(function () {
-  // === Configuración de toggles (unificado: inputSel sirve para textarea o number) ===
-  const toggles = [
-    { radioName: 'equipos_ti',       inputSel: '#ti',    groupSel: '#tiGroup',    defaultText: 'Sin novedades con los equipos.' },
-    { radioName: 'facturas_ti',      inputSel: '#ti1',   groupSel: '#ti1Group',   defaultText: 'Las facturas electrónicas se integran con código CUFE.' },
-    { radioName: 'novedades_ti',     inputSel: '#ti2',   groupSel: '#ti2Group',   defaultText: 'Sin novedades.' },
-    { radioName: 'casos_ti',         inputSel: '#ti3',   groupSel: '#ti3Group',   defaultText: 'No se reportan casos o solicitudes ni pendientes.' },
+$(function () {
+    'use strict';
 
-    // OJO: aquí corregimos bmp -> bpm
-    { radioName: 'visita_ss',        inputSel: '#bpm1',  groupSel: '#bpm1Group',  defaultText: 'Sin novedad.' },
-    { radioName: 'visita_dagma',     inputSel: '#bpm2',  groupSel: '#bpm2Group',  defaultText: 'Sin novedad.' },
-    { radioName: 'visita_west',      inputSel: '#bpm3',  groupSel: '#bpm3Group',  defaultText: 'Sin novedad.' },
-    { radioName: 'novedad_grameras', inputSel: '#bpm8',  groupSel: '#bpm8Group',  defaultText: 'Sin novedad.' },
+    var $form = $('.form-bitacora').first();
+    var $bar = $('#bitDraftBar');
+    if (!$form.length || !$bar.length) return;
 
-    { radioName: 'accidentes_sst',   inputSel: '#sst1',  groupSel: '#sst1Group',  defaultText: 'Sin novedades.' },
-    { radioName: 'incapacidades_sst',inputSel: '#sst2',  groupSel: '#sst2Group',  defaultText: 'Sin novedades.' },
-    { radioName: 'ambiente_laboral', inputSel: '#sst3',  groupSel: '#sst3Group',  defaultText: 'Sin novedades.' },
-    { radioName: 'senal_sst',        inputSel: '#sst4',  groupSel: '#sst4Group',  defaultText: 'Sin novedades.' },
-    { radioName: 'entrega_epp',      inputSel: '#sst6',  groupSel: '#sst6Group',  defaultText: 'Sin novedades.' },
-    { radioName: 'novedades_sst',    inputSel: '#sst7',  groupSel: '#sst7Group',  defaultText: 'Sin novedades.' },
-    { radioName: 'casos_sst',        inputSel: '#sst8',  groupSel: '#sst8Group',  defaultText: 'Sin novedades.' },
+    var form = $form[0];
+    var endpoint = String($bar.data('endpoint') || '../scripts/bitacora_draft.php');
+    var empresaId = String($form.find('input[name="empresa_id"]').val() || '');
+    var csrfToken = String($form.find('input[name="csrf_token"]').val() || '');
+    var debounceMs = 5000;
+    var retryDelays = [1000, 2500, 5000];
+    var autosaveTimer = null;
+    var onlineRetryTimer = null;
+    var activeRequest = null;
+    var savePromise = null;
+    var initialLoadPromise = null;
+    var initialLoadComplete = false;
+    var restoring = false;
+    var dirty = false;
+    var changeSerial = 0;
+    var token = null;
+    var version = 0;
+    var serverExists = false;
+    var serverPayload = null;
+    var lastSavedJson = null;
+    var conflict = null;
+    var metadataGeneration = 0;
 
-    { radioName: 'equipos_cocina',   inputSel: '#mant',  groupSel: '#mantGroup',  defaultText: 'Sin novedades.' },
-    { radioName: 'equipos_bar',      inputSel: '#mant1', groupSel: '#mant1Group', defaultText: 'Sin novedades.' },
-    { radioName: 'equipos_salon',    inputSel: '#mant2', groupSel: '#mant2Group', defaultText: 'Sin novedades.' },
-    { radioName: 'locativos',        inputSel: '#mant3', groupSel: '#mant3Group', defaultText: 'Sin novedades.' },
-    { radioName: 'pendientes',       inputSel: '#mant4', groupSel: '#mant4Group', defaultText: 'Sin novedades.' },
-
-    // Ejemplo numérico: si #hielo es input[type=number]
-    { radioName: 'hielo_produ',      inputSel: '#hielo', groupSel: '#hieloGroup', defaultText: 'Sin novedades.', defaultNumber: 0 },
-    { radioName: 'hielo_kolbitos',        inputSel: '#hielo1', groupSel: '#hielo1Group', defaultText: 'Sin novedades.', defaultNumber: 0 },
-    { radioName: 'hielo_consumo',        inputSel: '#hielo2', groupSel: '#hielo2Group', defaultText: 'Sin novedades.', defaultNumber: 0 },
-    { radioName: 'hielo_enviado',        inputSel: '#hielo4', groupSel: '#hielo4Group', defaultText: 'Sin novedades.' },
-    { radioName: 'hielo_recibido',        inputSel: '#hielo5', groupSel: '#hielo5Group', defaultText: 'Sin novedades.' },
-    
-    { radioName: 'facturas_mesas',        inputSel: '#fa_mesas', groupSel: '#fa_mesasGroup', defaultText: 'No se anularon facturas.' },
-    { radioName: 'facturas_domic',        inputSel: '#fa_dom', groupSel: '#fa_domGroup', defaultText: 'No se anularon facturas.' },
-    { radioName: 'facturas_rappi',        inputSel: '#fa_rappi', groupSel: '#fa_rappiGroup', defaultText: 'No se anularon facturas.' },
-    { radioName: 'bonos_coomeva',        inputSel: '#tesor1', groupSel: '#tesor1Group', defaultText: 'No se canjearon bonos Coomeva.' },
-    
-    { radioName: 'reservas_15', inputSel: '#mer4', groupSel: '#mer4Group', defaultText: 'No se realizaron reservas.' },
-    { radioName: 'easypedido', inputSel: '#tesor2', groupSel: '#tesor2Group', defaultText: 'No se realizaron pedidos por EasyPedido.' },
-    
-    { radioName: 'planta_elect', inputSel: '#mant5', groupSel: '#plantaGroup', defaultTime: '00:00' },
-    { radioName: 'planta_elect', inputSel: '#mant6', groupSel: '#plantaGroup', defaultTime: '00:00' },
-    { radioName: 'planta_elect', inputSel: '#mant7', groupSel: '#plantaGroup', defaultNumber: 0 },
-    { radioName: 'planta_elect', inputSel: '#mant8', groupSel: '#plantaGroup', defaultText: 'No se presentaron novedades relacionadas a la planta eléctrica.' }
-  ];
-
-  // Helpers
-  const isNumberInput = $el => $el.length && $el.is('input[type=number]');
-  function isTimeInput($el) {
-      return $el.is('input[type="time"]');
-    }
-  const coerceNumber = v => (v === null || v === undefined || String(v).trim() === '') ? '' : Number(v);
-
-  // Solo UI (no toca valores)
-  function applyToggleState(value, $group, $input) {
-    if (value === 'Si') { $group.show();  $input.prop('required', true);  }
-    else                { $group.hide();  $input.prop('required', false); }
-  }
-
-  // Escribe defaults cuando el radio está en "No" y el campo está vacío
-  // Soporta textarea y number.
-  function prepararDefaultsAntesDeGuardar() {
-      toggles.forEach(t => {
-        const val = $(`input[name="${t.radioName}"]:checked`).val();
-        const $el = $(t.inputSel);
-        if (!val || !$el.length) return;
-    
-        const actual = $.trim($el.val());
-    
-        // Solo escribimos default si el radio está en "No" y el campo está vacío
-        if (val === 'No' && actual === '') {
-          if (isNumberInput($el)) {
-            $el.val(t.defaultNumber ?? 0);
-          } else if (isTimeInput($el)) {
-            // Para inputs type="time" (HH:MM)
-            const def = t.defaultTime ?? '00:00';
-            $el.val(def);
-          } else {
-            $el.val(t.defaultText ?? 'Sin novedades.');
-          }
-        }
-      });
-    }
-
-  // Enlaza eventos e inicializa UI
-  function bindToggle(t) {
-    const $group = $(t.groupSel);
-    const $input = $(t.inputSel);
-
-    $(`input[name="${t.radioName}"]`).on('change', function () {
-      applyToggleState(this.value, $group, $input);
-    });
-
-    const checked = $(`input[name="${t.radioName}"]:checked`).val();
-    applyToggleState(checked, $group, $input);
-  }
-  toggles.forEach(bindToggle);
-
-  // Radios simples (sin input asociado)
-  const simpleRadios = ['bpm4', 'bpm5', 'bpm6', 'bpm7'];
-
-  // Obtiene valor de un campo por name (convierte a número si corresponde)
-  function getByName(name) {
-    const $el = $(`[name="${name}"]`);
-    if (!$el.length) return null;
-
-    if ($el.is('select[multiple]')) {
-      return $el.val() || [];
-    }
-    if ($el.is('input[type=radio]')) {
-      return $(`input[name="${name}"]:checked`).val() || null;
-    }
-    if (isNumberInput($el)) {
-      const raw = $el.val();
-      return (raw === '' || raw === null || raw === undefined) ? '' : Number(raw);
-    }
-    return $el.val();
-  }
-
-  // Setea valor en un campo por name (maneja number / texto)
-  function setByName(name, value) {
-    const $el = $(`[name="${name}"]`);
-    if (!$el.length) return;
-
-    if ($el.is('select[multiple]')) {
-      $el.val(Array.isArray(value) ? value : []).trigger('change');
-      return;
-    }
-    if ($el.is('input[type=radio]')) {
-      if (value) $(`input[name="${name}"][value="${value}"]`).prop('checked', true);
-      else $(`input[name="${name}"]`).prop('checked', false);
-      return;
-    }
-    if (isNumberInput($el)) {
-      $el.val(value === '' || value === null || value === undefined ? '' : coerceNumber(value));
-      return;
-    }
-    $el.val(value ?? '');
-  }
-
-  function obtenerValoresFormulario() {
-    let campos = [
-      "fechab","sede","responsable","cargo","sac","supervisores[]","act_sup",
-      "comens","comens1","comens2","mesas","bar","cocina","coc","mer","mer1",
-      "mer2","mer3","gh","sst1","sst2","sst3","sst4","sst5","sst6","sst7","sst8",
-      "ti","ti1","ti2","ti3","mant","mant1","mant2","mant3","mant4","bpm","inv","inv1",
-      "inv2","inv3","inv4","inv5","inv6","inv7","inv8","inv9","inv10","inv11","inv12",
-      "inv13","inv14","inv15","inv16","inv17","inv18","inv19","inv20","inv21","inv23",
-      "desp","dorp","dorp1","fa_mesas","fa_dom","fa_rappi","tesor","rappi","domi",
-      "domiexpress","hdomi","pd","tp","hielo","hielo1","inv24","hielo2","hielo3","reu",
-      "nov_chetano","ventas_chetano","coord","coord1","coord2","coord3","coord4",
-      "coord5","coord6","coord7","coord8","coord9","coord10","coord11","coord12",
-      "coord13","coord14","coord15","coord16","coord17","coord18","coord19","coord20",
-      "coord21","dom_chetano","mp_chetano","nov_torito","ventas_torito","devo","hielo4",
-      "hielo5","tesor1",
-      "bpm1","bpm2","bpm3","bpm4","bpm5","bpm6","bpm7","bpm8",
-      "equipo_bpm[]",
-      // radios detalle mejoramiento
-      "visita_ss","visita_dagma","visita_west","novedad_grameras",
-      // radios detalle TI
-      "equipos_ti","facturas_ti","novedades_ti","casos_ti",
-      // radios detalle SST
-      "accidentes_sst","incapacidades_sst","ambiente_laboral","senal_sst","equipo_sst[]",
-      "entrega_epp","novedades_sst","casos_sst",
-      // radios detalle MANT
-      "equipos_cocina","equipos_bar","equipos_salon","locativos","pendientes",
-      // radios del área bar
-      "hielo_produ","hielo_kolbitos","hielo_consumo","hielo_enviado","hielo_recibido",
-      // radios de tesoreria
-      "facturas_mesas","facturas_domic","facturas_rappi","bonos_coomeva",
-      //radio y nuevo campo de mercadeo
-      "reservas_15","mer4",
-      //radio y nuevo campo de tesorería
-      "easypedido","tesor2",
-      //Nuevo campo para mantenimiento (Planta Eléctrica)
-      "planta_elect","mant5","mant6","mant7","mant8",
-      //Campos tipo time
-      "hora_entrada","hora_salida"
-    ];
-
-    let bitacora = {};
-    campos.forEach(campo => {
-      if (campo === "supervisores[]") {
-        bitacora["supervisores"] = $('select[name="supervisores[]"]').val() || [];
-      } else if (campo === "equipo_bpm[]") {
-        bitacora["equipo_bpm"] = $('select[name="equipo_bpm[]"]').val() || [];
-      } else if (campo === "equipo_sst[]") {
-        bitacora["equipo_sst"] = $('select[name="equipo_sst[]"]').val() || [];
-      } else if (simpleRadios.includes(campo)) {
-        bitacora[campo] = $(`input[name="${campo}"]:checked`).val() || null;
-      } else {
-        bitacora[campo] = getByName(campo);
-      }
-    });
-
-    const procesadosDinamicos = {};
-    $('[data-dynamic-field][name]').each(function () {
-      const $el = $(this);
-      const rawName = $el.attr('name') || '';
-      const name = rawName.replace(/\[\]$/, '');
-      if (!name || procesadosDinamicos[name]) return;
-      procesadosDinamicos[name] = true;
-
-      if ($el.is('input[type=radio]')) {
-        bitacora[name] = $(`input[name="${rawName}"]:checked`).val() || null;
-      } else if ($el.is('select[multiple]')) {
-        bitacora[name] = $el.val() || [];
-      } else if ($el.is('input[type=number]')) {
-        const raw = $el.val();
-        bitacora[name] = (raw === '' || raw === null || raw === undefined) ? '' : Number(raw);
-      } else {
-        bitacora[name] = $el.val();
-      }
-    });
-    return bitacora;
-  }
-  
-    function normalizeTime(v) {
-      if (v === null || v === undefined) return '';
-      const s = String(v).trim();
-      // Si quieres que 00:00 se vea vacío al cargar:
-      return (s === '' || s === '00:00') ? '' : s;
-    }
-    
-    const NO_APLICA_SUP = 'No hay visita por parte de los supervisores';
-
-    function getSupArr() {
-      const v = $('#supervisores').val();
-      if (!v) return [];
-      return Array.isArray(v) ? v : [v];
-    }
-    
-    function toggleContenedorSup() {
-      const arr = getSupArr();
-      const noAplica = arr.includes(NO_APLICA_SUP);
-      const mostrar = arr.length > 0 && !noAplica; //bool
-    
-      $('#contenedor_sup').toggle(mostrar);
-    
-      // ✅ Si se muestra: required + enabled
-      // ✅ Si NO se muestra: required=false + disabled=true (clave para que no bloquee el envío)
-      $('#act_sup')
-        .prop('required', mostrar)
-        .prop('disabled', !mostrar);
-    
-      $('#hora_entrada, #hora_salida')
-        .prop('required', mostrar)
-        .prop('disabled', !mostrar);
-    
-      if (!mostrar) {
-        $('#act_sup').val('');
-        $('#hora_entrada, #hora_salida').val('');
-      }
-    }
-    
-    // En vivo cuando cambie el select2
-    let fixingSup = false;
-
-    $('#supervisores').on('change', function () {
-      if (fixingSup) return;
-    
-      let arr = getSupArr();
-    
-      // Si está NO_APLICA y además otros, deja solo NO_APLICA
-      if (arr.includes(NO_APLICA_SUP) && arr.length > 1) {
-        fixingSup = true;
-        $(this).val([NO_APLICA_SUP]).trigger('change');
-        fixingSup = false;
-        return;
-      }
-    
-      toggleContenedorSup();
-    });
-
-  // --- Helpers para data-sede ---
-    function includesSede($el, sede) {
-      const sedes = ($el.attr('data-sede') || '')
-        .split(',')
-        .map(s => $.trim(s.toUpperCase()));
-      return sedes.includes((sede || '').toUpperCase());
-    }
-    
-    function toggleCamposPorSede(sedeSeleccionada) {
-      $('[data-sede]').each(function () {
-        const $el = $(this);
-        const permitido = includesSede($el, sedeSeleccionada);
-    
-        const $contenedor = $el.closest('.form-group, [class*="col-"], fieldset, .container, .row').length
-          ? $el.closest('.form-group, [class*="col-"], fieldset, .container, .row')
-          : $el;
-    
-        const isInput = $el.is('input, select, textarea');
-    
-        if (permitido) {
-          $contenedor.show();
-          if (isInput) {
-            if ($el.data('was-required') === true) $el.prop('required', true);
-            $el.prop('disabled', false);
-          }
-        } else {
-          $contenedor.hide();
-          if (isInput) {
-            if ($el.prop('required') && $el.data('was-required') !== true) {
-              $el.data('was-required', true);
+    function purgeLegacyStorage(storage) {
+        try {
+            for (var i = storage.length - 1; i >= 0; i--) {
+                var key = storage.key(i) || '';
+                if (key === 'bitacora' || key.indexOf('bitacora_') === 0) {
+                    storage.removeItem(key);
+                }
             }
-            $el.prop('required', false).prop('disabled', true);
-    
-            if ($el.hasClass('select2-hidden-accessible')) {
-              $el.val(null).trigger('change');
-            } else if ($el.is('select')) {
-              $el.prop('selectedIndex', 0);
+        } catch (e) {
+            // Storage can be unavailable; drafts no longer depend on it.
+        }
+    }
+
+    purgeLegacyStorage(window.localStorage);
+    purgeLegacyStorage(window.sessionStorage);
+
+    function stableValue(value) {
+        if (Array.isArray(value)) {
+            return value.map(stableValue);
+        }
+        if (value && typeof value === 'object') {
+            var sorted = {};
+            Object.keys(value).sort().forEach(function (key) {
+                sorted[key] = stableValue(value[key]);
+            });
+            return sorted;
+        }
+        return value;
+    }
+
+    function stableJson(value) {
+        return JSON.stringify(stableValue(value));
+    }
+
+    function hashJson(value) {
+        var hash = 2166136261;
+        for (var i = 0; i < value.length; i++) {
+            hash ^= value.charCodeAt(i);
+            hash = Math.imul(hash, 16777619);
+        }
+        return (hash >>> 0).toString(36) + ':' + value.length;
+    }
+
+    function formPayload() {
+        var payload = {};
+        var processed = {};
+
+        $form.find(':input[name]').each(function () {
+            var $control = $(this);
+            var rawName = String($control.attr('name') || '');
+            var name = rawName.replace(/\[\]$/, '');
+            if (!name || processed[name] || name === 'csrf_token' || name === 'empresa_id') return;
+            if ($control.is(':button, button, input[type="button"], input[type="submit"], input[type="reset"], input[type="file"]')) return;
+            processed[name] = true;
+
+            var $sameName = $form.find(':input[name]').filter(function () {
+                return String($(this).attr('name') || '').replace(/\[\]$/, '') === name;
+            });
+            if ($sameName.filter(':not(:disabled)').length === 0) return;
+
+            if ($control.is('input[type="radio"]')) {
+                payload[name] = $sameName.filter(':checked').val() || '';
+            } else if ($control.is('input[type="checkbox"]')) {
+                var checked = $sameName.filter(':checked').map(function () { return $(this).val(); }).get();
+                payload[name] = checked.length > 1 || /\[\]$/.test(rawName) ? checked : (checked[0] || null);
+            } else if ($control.is('select[multiple]')) {
+                payload[name] = $control.val() || [];
             } else {
-              $el.val('');
+                payload[name] = $control.val() == null ? '' : $control.val();
             }
-          }
+        });
+
+        var nestedPayload = {};
+        Object.keys(payload).forEach(function (name) {
+            var match;
+            var parts = [];
+            var pattern = /([^\[\]]+)/g;
+            while ((match = pattern.exec(name)) !== null) parts.push(match[1]);
+            if (parts.length < 2) {
+                nestedPayload[name] = payload[name];
+                return;
+            }
+            var target = nestedPayload;
+            parts.forEach(function (part, index) {
+                if (index === parts.length - 1) {
+                    target[part] = payload[name];
+                } else {
+                    if (!target[part] || typeof target[part] !== 'object') target[part] = {};
+                    target = target[part];
+                }
+            });
+        });
+
+        return nestedPayload;
+    }
+
+    function currentPayloadState() {
+        var payload = formPayload();
+        var json = stableJson(payload);
+        return { payload: payload, json: json, hash: hashJson(json) };
+    }
+
+    function setStatus(state, label, detail) {
+        $bar.attr('data-state', state);
+        $('#bitDraftStatus').text(label);
+        $('#bitDraftStatusDetail').text(detail || '');
+    }
+
+    function formatUpdatedAt(value) {
+        if (!value) return '';
+        var date = new Date(value);
+        if (isNaN(date.getTime())) return String(value);
+        return date.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+    }
+
+    function updateButtons() {
+        $('#bit_draft_restore, #bit_draft_delete').prop('hidden', !serverExists);
+        $('#bitDraftConflictActions').prop('hidden', !conflict);
+    }
+
+    function responseError(message, response, data) {
+        var error = new Error(message);
+        error.response = response || null;
+        error.data = data || null;
+        error.status = response ? response.status : 0;
+        error.transient = !response || response.status === 408 || response.status === 425 || response.status === 429 || response.status >= 500;
+        return error;
+    }
+
+    function delay(ms) {
+        return new Promise(function (resolve) { window.setTimeout(resolve, ms); });
+    }
+
+    function postAttempt(params, attempt) {
+        var body = new URLSearchParams();
+        Object.keys(params).forEach(function (key) {
+            if (params[key] !== undefined && params[key] !== null) body.append(key, String(params[key]));
+        });
+
+        return window.fetch(endpoint, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                'X-CSRF-Token': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: body.toString()
+        }).then(function (response) {
+            return response.text().then(function (text) {
+                var data = null;
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    throw responseError('El servidor respondió con datos inválidos.', response, null);
+                }
+
+                if (!response.ok || !data.ok) {
+                    var error = responseError(data.message || 'No fue posible procesar el borrador.', response, data);
+                    if (response.status === 409 && data.code === 'draft_conflict') error.conflict = true;
+                    throw error;
+                }
+                return data;
+            });
+        }).catch(function (error) {
+            if (!(error instanceof Error) || error.status === undefined) {
+                error = responseError('No fue posible contactar el servidor.', null, null);
+            }
+            if (error.transient && attempt < retryDelays.length) {
+                setStatus(navigator.onLine ? 'error' : 'offline', navigator.onLine ? 'Error' : 'Sin conexión', 'Reintentando...');
+                return delay(retryDelays[attempt]).then(function () {
+                    return postAttempt(params, attempt + 1);
+                });
+            }
+            throw error;
+        });
+    }
+
+    function request(params) {
+        var predecessor = activeRequest ? activeRequest.catch(function () {}) : Promise.resolve();
+        var $draftButtons = $('#bit_draft_save, #bit_draft_restore, #bit_draft_delete, #bit_draft_load_server, #bit_draft_overwrite');
+        $draftButtons.prop('disabled', true);
+        var operation = predecessor.then(function () { return postAttempt(params, 0); });
+        activeRequest = operation;
+        operation.then(function () {
+            if (activeRequest === operation) {
+                activeRequest = null;
+                $draftButtons.prop('disabled', false);
+            }
+        }, function () {
+            if (activeRequest === operation) {
+                activeRequest = null;
+                $draftButtons.prop('disabled', false);
+            }
+        });
+        return operation;
+    }
+
+    function controlsByName(name) {
+        return $form.find(':input[name]').filter(function () {
+            return String($(this).attr('name') || '').replace(/\[\]$/, '') === name;
+        });
+    }
+
+    function setFieldValue(name, value) {
+        var $controls = controlsByName(name);
+        if (!$controls.length) return;
+        var $first = $controls.first();
+
+        if ($first.is('input[type="radio"]')) {
+            $controls.prop('checked', false).filter(function () {
+                return String($(this).val()) === String(value == null ? '' : value);
+            }).prop('checked', true);
+            return;
         }
-      });
-    }
-    
-    function clearCamposPorSede(sede) {
-      $('[data-sede]').each(function () {
-        const $el = $(this);
-        if (!includesSede($el, sede)) return;
-    
-        const $contenedor = $el.closest('.form-group, [class*="col-"], fieldset, .container, .row').length
-          ? $el.closest('.form-group, [class*="col-"], fieldset, .container, .row')
-          : $el;
-    
-        const isInput = $el.is('input, select, textarea');
-    
-        if (isInput) {
-          $el.prop('required', false).prop('disabled', true);
-          if ($el.hasClass('select2-hidden-accessible')) {
-            $el.val(null).trigger('change');
-          } else if ($el.is('select')) {
-            $el.prop('selectedIndex', 0);
-          } else {
-            $el.val('');
-          }
+        if ($first.is('input[type="checkbox"]')) {
+            var values = Array.isArray(value) ? value.map(String) : [String(value == null ? '' : value)];
+            $controls.each(function () {
+                $(this).prop('checked', values.indexOf(String($(this).val())) !== -1);
+            });
+            return;
         }
-        $contenedor.hide();
-      });
-    }
-    
-    // Vincula el select de sede para mostrar/ocultar en vivo
-    $('#idSede').on('change', function () {
-      toggleCamposPorSede($(this).val());
-    });
-    
-    // Ejecuta una vez al cargar la página (por si el select trae valor)
-    toggleCamposPorSede($('#idSede').val() || '');
-
-  function asignarValoresFormulario(bitacora) {
-    // 1) Radios de los toggles
-    toggles.forEach(t => {
-      const v = bitacora[t.radioName] || null;
-      if (v) $(`input[name="${t.radioName}"][value="${v}"]`).prop('checked', true);
-      else   $(`input[name="${t.radioName}"]`).prop('checked', false);
-    });
-
-    // 2) Inputs de los toggles (textarea o number)
-    toggles.forEach(t => {
-      const nameAttr = $(t.inputSel).attr('name') || null;
-      if (nameAttr && Object.prototype.hasOwnProperty.call(bitacora, nameAttr)) {
-        setByName(nameAttr, bitacora[nameAttr]);
-      }
-    });
-
-    // 3) Resto de campos (incluye radios simples)
-    Object.keys(bitacora).forEach(campo => {
-      if (toggles.some(t => t.radioName === campo)) return;
-      if (toggles.some(t => ($(t.inputSel).attr('name') || '') === campo)) return;
-
-      const valor = bitacora[campo];
-      if (simpleRadios.includes(campo)) {
-        if (valor) $(`input[name="${campo}"][value="${valor}"]`).prop('checked', true);
-        else       $(`input[name="${campo}"]`).prop('checked', false);
-        return;
-      }
-      setByName(campo, valor);
-    });
-
-    // 4) Select2 múltiples (si aplica)
-    $('select[name="equipo_bpm[]"]').val(bitacora.equipo_bpm || []).trigger('change');
-    $('select[name="equipo_sst[]"]').val(bitacora.equipo_sst || []).trigger('change');
-    
-    $('select[name="supervisores[]"]').val(bitacora.supervisores || []).trigger('change');
-    setByName('hora_entrada', normalizeTime(bitacora.hora_entrada));
-    setByName('hora_salida',  normalizeTime(bitacora.hora_salida));
-    
-    // toggle al final para asegurar estado final
-    toggleContenedorSup();
-
-    // 5) Aplica UI final
-    toggles.forEach(t => {
-      const v = $(`input[name="${t.radioName}"]:checked`).val();
-      applyToggleState(v, $(t.groupSel), $(t.inputSel));
-    });
-  }
-
-  function resetSelect2WithTags($sel, $containerToHide) {
-    $sel.val(null).trigger('change');
-    $sel.find('option[data-select2-tag="true"]').remove();
-    $sel.find('option').prop('disabled', false);
-    if ($containerToHide && $containerToHide.length){
-        $containerToHide.hide();
-        // Si el contenedor es el de supervisores, resetea horas y textarea
-        if ($containerToHide.attr('id') === 'contenedor_sup') {
-          $('#hora_entrada, #hora_salida').prop('required', false).val('');
-          $('#act_sup').val('');
+        if ($first.is('select[multiple]')) {
+            var selected = Array.isArray(value) ? value : [];
+            selected.forEach(function (item) {
+                if (item === null || item === undefined || String(item).trim() === '') return;
+                var exists = $first.find('option').filter(function () { return this.value === String(item); }).length > 0;
+                if (!exists) $('<option>').val(String(item)).text(String(item)).attr('data-select2-tag', 'true').appendTo($first);
+            });
+            $first.val(selected).trigger('change');
+            return;
         }
+        $first.val(value == null ? '' : value);
     }
-  }
 
-  // --- Botones guardar/cargar ---
-  $('#guardar_local_storage').on('click', function () {
-    // Rellena defaults cuando radio=No
-    prepararDefaultsAntesDeGuardar();
-
-    const bitacora = obtenerValoresFormulario();
-    localStorage.setItem('bitacora', JSON.stringify(bitacora));
-    Swal.fire('Guardado', 'Los datos han sido guardados temporalmente. Para cargar la información dar clic en "Cargar Información Temporal"', 'success');
-
-    // Reset visual
-    $('.form-bitacora')[0].reset();
-    toggles.forEach(t => applyToggleState(undefined, $(t.groupSel), $(t.inputSel)));
-    simpleRadios.forEach(n => $(`input[name="${n}"]`).prop('checked', false));
-    resetSelect2WithTags($('#supervisores'), $('#contenedor_sup'));
-    resetSelect2WithTags($('#equipo_bpm'), $('#contenedor_bpm'));
-    resetSelect2WithTags($('#equipo_sst'), $('#contenedor_sst'));
-    // Además limpia/oculta todo lo de PANCE
-    clearCamposPorSede('PANCE');
-  });
-
-  $('#cargar_local_storage').on('click', function () {
-    let bitacora = localStorage.getItem('bitacora');
-    if (!bitacora) {
-      Swal.fire('Error', 'No hay datos guardados en Local Storage', 'error');
-      return;
+    function refreshConditionalUi() {
+        if (window.bitacoraSede && window.bitacoraSede.refresh) window.bitacoraSede.refresh();
+        $form.find('[data-toggle-detail]:checked').trigger('change');
+        $form.find('input[name="planta_elect"]:checked').trigger('change');
+        $form.find('select[multiple]').trigger('change');
+        $form.trigger('bitacora:refreshConditional');
     }
-    asignarValoresFormulario(JSON.parse(bitacora));
-    // Muestra/oculta según la sede cargada
-    toggleCamposPorSede($('#idSede').val() || '');
-    
-  });
+
+    function flattenPayload(payload) {
+        var flat = {};
+        function visit(value, name) {
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+                Object.keys(value).forEach(function (key) {
+                    visit(value[key], name ? name + '[' + key + ']' : key);
+                });
+                return;
+            }
+            flat[name] = value;
+        }
+        Object.keys(payload).forEach(function (name) { visit(payload[name], name); });
+        return flat;
+    }
+
+    function restorePayload(payload, response) {
+        var flatPayload = flattenPayload(payload);
+        restoring = true;
+        form.reset();
+        $form.find('.select2-field').val(null).trigger('change');
+
+        ['sede', 'idSede'].forEach(function (name) {
+            if (Object.prototype.hasOwnProperty.call(payload, name)) setFieldValue(name, payload[name]);
+        });
+        if (window.bitacoraSede && window.bitacoraSede.refresh) window.bitacoraSede.refresh();
+
+        Object.keys(flatPayload).filter(function (name) { return name.indexOf('[') === -1; }).forEach(function (name) {
+            setFieldValue(name, flatPayload[name]);
+        });
+        refreshConditionalUi();
+        Object.keys(flatPayload).forEach(function (name) { setFieldValue(name, flatPayload[name]); });
+        refreshConditionalUi();
+        restoring = false;
+
+        dirty = false;
+        conflict = null;
+        lastSavedJson = stableJson(payload);
+        serverPayload = payload;
+        updateButtons();
+        if (window.bitacoraUi) {
+            if (window.bitacoraUi.updateProgress) window.bitacoraUi.updateProgress();
+            if (window.bitacoraUi.snapshot) window.bitacoraUi.snapshot();
+        }
+        var updated = formatUpdatedAt(response && (response.updatedAt || response.updated_at));
+        setStatus('saved', 'Guardado', updated ? 'Restaurado del ' + updated : 'Borrador restaurado');
+    }
+
+    function schemaChanged(response) {
+        var changed = response.schemaChanged;
+        if (changed === undefined && response.schema_hash && response.current_schema_hash) {
+            changed = response.schema_hash !== response.current_schema_hash;
+        }
+        return !!changed;
+    }
+
+    function schemaNotice(response) {
+        if (!schemaChanged(response)) return '';
+        var omitted = Array.isArray(response.omittedFields) ? response.omittedFields : [];
+        var detail = omitted.length
+            ? '<br><small>No se restaurarán: ' + $('<div>').text(omitted.join(', ')).html() + '.</small>'
+            : '';
+        return '<br><strong>El formulario cambió desde el último guardado.</strong>' + detail;
+    }
+
+    function offerInitialDraft(response) {
+        var updated = formatUpdatedAt(response.updatedAt || response.updated_at);
+        return Swal.fire({
+            icon: schemaChanged(response) ? 'warning' : 'info',
+            title: 'Hay un borrador guardado',
+            html: (updated ? 'Última actualización: ' + $('<div>').text(updated).html() + '.' : 'Puedes continuar donde quedaste.') + schemaNotice(response),
+            showDenyButton: true,
+            showCancelButton: true,
+            confirmButtonText: 'Restaurar',
+            denyButtonText: 'Empezar en blanco',
+            cancelButtonText: 'Descartar',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            customClass: { popup: 'bit-swal-popup' }
+        }).then(function (result) {
+            if (result.isConfirmed || result.value === true) {
+                restorePayload(serverPayload || {}, response);
+                return;
+            }
+            if (result.isDenied) {
+                setStatus(dirty ? 'changes' : 'saved', dirty ? 'Cambios' : 'Guardado', dirty ? 'Se guardarán en 5 segundos' : 'El borrador sigue disponible para restaurarlo');
+                if (dirty) scheduleAutosave();
+                return;
+            }
+            return deleteDraft(false);
+        });
+    }
+
+    function acceptLoad(response, offer) {
+        initialLoadComplete = true;
+        conflict = null;
+        serverExists = !!response.exists;
+        token = response.token || null;
+        version = Number(response.version || 0);
+        serverPayload = response.payload && typeof response.payload === 'object' ? response.payload : null;
+        lastSavedJson = serverPayload ? stableJson(serverPayload) : null;
+        updateButtons();
+
+        if (!serverExists) {
+            setStatus('saved', 'Guardado', 'Aún no hay un borrador en el servidor');
+            if (dirty) scheduleAutosave();
+            return Promise.resolve();
+        }
+        if (offer) return offerInitialDraft(response);
+        return Promise.resolve(response);
+    }
+
+    function loadDraft(offer) {
+        setStatus('searching', 'Buscando', 'Consultando el servidor...');
+        return request({ action: 'load', empresa_id: empresaId }).then(function (response) {
+            return acceptLoad(response, offer);
+        }).catch(function (error) {
+            initialLoadComplete = false;
+            setStatus(navigator.onLine ? 'error' : 'offline', navigator.onLine ? 'Error' : 'Sin conexión', 'No se pudo consultar el borrador');
+            throw error;
+        });
+    }
+
+    function markConflict(error) {
+        var data = error.data || {};
+        conflict = {
+            serverVersion: Number(data.serverVersion || data.current_version || version || 0),
+            updatedAt: data.updatedAt || data.updated_at || null
+        };
+        dirty = true;
+        if (autosaveTimer) window.clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        updateButtons();
+        var updated = formatUpdatedAt(conflict.updatedAt);
+        setStatus('conflict', 'Conflicto', updated ? 'El servidor cambió el ' + updated : 'Hay una versión más reciente en el servidor');
+    }
+
+    function performSave(force) {
+        if (conflict && !force) {
+            var blocked = new Error('Debes resolver el conflicto antes de guardar.');
+            blocked.conflict = true;
+            return Promise.reject(blocked);
+        }
+
+        var state = currentPayloadState();
+        if (serverExists && state.json === lastSavedJson) {
+            dirty = false;
+            setStatus('saved', 'Guardado', 'Sin cambios pendientes');
+            return Promise.resolve(getSubmissionMetadata());
+        }
+
+        var sentSerial = changeSerial;
+        var saveGeneration = metadataGeneration;
+        var expectedVersion = force && conflict ? conflict.serverVersion : version;
+        setStatus('saving', 'Guardando', 'Enviando cambios...');
+
+        return request({
+            action: 'save',
+            empresa_id: empresaId,
+            payload: state.json,
+            token: token || '',
+            expected_version: expectedVersion || 0,
+            force: force ? 1 : 0
+        }).then(function (response) {
+            if (saveGeneration !== metadataGeneration) return getSubmissionMetadata();
+            token = response.token || token;
+            version = Number(response.version || expectedVersion || 0);
+            serverExists = true;
+            serverPayload = state.payload;
+            lastSavedJson = state.json;
+            conflict = null;
+            var current = currentPayloadState();
+            dirty = sentSerial !== changeSerial || current.hash !== state.hash || current.json !== state.json;
+            updateButtons();
+            var updated = formatUpdatedAt(response.updatedAt || response.updated_at);
+            setStatus(dirty ? 'changes' : 'saved', dirty ? 'Cambios' : 'Guardado', dirty ? 'Hay cambios nuevos pendientes' : (updated ? updated : 'Borrador actualizado'));
+            if (dirty && !autosaveTimer) scheduleAutosave();
+            return getSubmissionMetadata();
+        }).catch(function (error) {
+            if (saveGeneration !== metadataGeneration) return getSubmissionMetadata();
+            if (error.conflict) {
+                markConflict(error);
+            } else {
+                dirty = true;
+                setStatus(navigator.onLine ? 'error' : 'offline', navigator.onLine ? 'Error' : 'Sin conexión', 'Los cambios siguen pendientes');
+            }
+            throw error;
+        });
+    }
+
+    function saveNow(force) {
+        if (autosaveTimer) window.clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        if (!initialLoadComplete && initialLoadPromise) {
+            return initialLoadPromise.catch(function () {
+                return loadDraft(true);
+            }).then(function () {
+                return saveNow(force);
+            });
+        }
+        if (savePromise) {
+            return savePromise.then(function () {
+                return dirty || force ? saveNow(force) : getSubmissionMetadata();
+            });
+        }
+        savePromise = performSave(!!force);
+        savePromise.then(function () { savePromise = null; }, function () { savePromise = null; });
+        return savePromise;
+    }
+
+    function scheduleAutosave(delayMs) {
+        if (!initialLoadComplete || conflict || restoring) return;
+        if (autosaveTimer) window.clearTimeout(autosaveTimer);
+        autosaveTimer = window.setTimeout(function () {
+            autosaveTimer = null;
+            saveNow(false).catch(function () {});
+        }, delayMs === undefined ? debounceMs : delayMs);
+    }
+
+    function deleteDraft(confirmFirst) {
+        var confirmation = confirmFirst ? Swal.fire({
+            icon: 'warning',
+            title: '¿Eliminar el borrador?',
+            text: 'El formulario actual no se borrará, pero el borrador del servidor no podrá recuperarse.',
+            showCancelButton: true,
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar',
+            customClass: { popup: 'bit-swal-popup' }
+        }) : Promise.resolve({ isConfirmed: true });
+
+        return confirmation.then(function (result) {
+            if (!result.isConfirmed && result.value !== true) return;
+            setStatus('saving', 'Guardando', 'Eliminando borrador...');
+            return request({
+                action: 'delete',
+                empresa_id: empresaId,
+                token: token || '',
+                expected_version: version || 0,
+                force: 0
+            }).then(function () {
+                metadataGeneration++;
+                if (autosaveTimer) window.clearTimeout(autosaveTimer);
+                if (onlineRetryTimer) window.clearTimeout(onlineRetryTimer);
+                autosaveTimer = null;
+                onlineRetryTimer = null;
+                token = null;
+                version = 0;
+                serverExists = false;
+                serverPayload = null;
+                lastSavedJson = null;
+                conflict = null;
+                dirty = false;
+                updateButtons();
+                setStatus('saved', 'Guardado', 'Borrador eliminado del servidor');
+            }).catch(function (error) {
+                if (error.conflict) markConflict(error);
+                else setStatus(navigator.onLine ? 'error' : 'offline', navigator.onLine ? 'Error' : 'Sin conexión', 'No se pudo eliminar el borrador');
+                throw error;
+            });
+        });
+    }
+
+    function loadServerCopy() {
+        return Swal.fire({
+            icon: 'warning',
+            title: '¿Cargar la versión del servidor?',
+            text: 'Los cambios pendientes de este formulario se reemplazarán.',
+            showCancelButton: true,
+            confirmButtonText: 'Cargar servidor',
+            cancelButtonText: 'Cancelar',
+            customClass: { popup: 'bit-swal-popup' }
+        }).then(function (result) {
+            if (!result.isConfirmed && result.value !== true) return;
+            return loadDraft(false).then(function (response) {
+                if (!response || !response.exists) {
+                    Swal.fire('Sin borrador', 'Ya no hay un borrador disponible en el servidor.', 'info');
+                    return;
+                }
+                restorePayload(serverPayload || {}, response);
+            });
+        });
+    }
+
+    function overwriteServerCopy() {
+        return Swal.fire({
+            icon: 'warning',
+            title: '¿Sobrescribir el borrador del servidor?',
+            text: 'Se reemplazará la versión más reciente con los datos actuales.',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, sobrescribir',
+            cancelButtonText: 'Cancelar',
+            customClass: { popup: 'bit-swal-popup' }
+        }).then(function (result) {
+            if (!result.isConfirmed && result.value !== true) return;
+            return saveNow(true);
+        });
+    }
+
+    function flush() {
+        if (autosaveTimer) window.clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        var ready = initialLoadPromise || Promise.resolve();
+        return ready.catch(function () {
+            return loadDraft(true);
+        }).then(function () {
+            if (conflict) {
+                var blocked = new Error('El borrador tiene un conflicto pendiente.');
+                blocked.conflict = true;
+                throw blocked;
+            }
+            return saveNow(false);
+        }).then(function () {
+            if (dirty) return flush();
+            return getSubmissionMetadata();
+        });
+    }
+
+    function clearLocalMetadata() {
+        metadataGeneration++;
+        if (autosaveTimer) window.clearTimeout(autosaveTimer);
+        if (onlineRetryTimer) window.clearTimeout(onlineRetryTimer);
+        autosaveTimer = null;
+        onlineRetryTimer = null;
+        restoring = true;
+        dirty = false;
+        token = null;
+        version = 0;
+        serverExists = false;
+        serverPayload = null;
+        lastSavedJson = null;
+        conflict = null;
+        updateButtons();
+        setStatus('saved', 'Finalizado', 'El envío fue aceptado y el borrador se eliminó');
+        window.setTimeout(function () { restoring = false; }, 0);
+    }
+
+    function getSubmissionMetadata() {
+        return {
+            token: serverExists ? token : null,
+            version: serverExists ? version : null
+        };
+    }
+
+    $form.on('input change', ':input[name]', function () {
+        if (restoring) return;
+        changeSerial++;
+        dirty = true;
+        setStatus(conflict ? 'conflict' : 'changes', conflict ? 'Conflicto' : 'Cambios', conflict ? 'Resuelve el conflicto para continuar' : 'Se guardarán en 5 segundos');
+        scheduleAutosave();
+    });
+
+    $('#bit_draft_save').on('click', function () {
+        saveNow(false).catch(function (error) {
+            if (error.conflict) return;
+            Swal.fire('No se pudo guardar', error.message || 'Intenta nuevamente.', 'error');
+        });
+    });
+    $('#bit_draft_restore').on('click', loadServerCopy);
+    $('#bit_draft_delete').on('click', function () { deleteDraft(true).catch(function () {}); });
+    $('#bit_draft_load_server').on('click', function () { loadServerCopy().catch(function () {}); });
+    $('#bit_draft_overwrite').on('click', function () { overwriteServerCopy().catch(function () {}); });
+
+    $(window).on('offline', function () {
+        if (dirty || !initialLoadComplete) setStatus('offline', 'Sin conexión', 'Los cambios siguen pendientes');
+    });
+    $(window).on('online', function () {
+        if (onlineRetryTimer) window.clearTimeout(onlineRetryTimer);
+        onlineRetryTimer = window.setTimeout(function () {
+            onlineRetryTimer = null;
+            if (!initialLoadComplete) {
+                initialLoadPromise = loadDraft(true);
+                initialLoadPromise.catch(function () {});
+            } else if (dirty && !conflict) {
+                scheduleAutosave(0);
+            }
+        }, 300);
+    });
+
+    $(window).on('pagehide', function () {
+        if (!dirty || conflict || !initialLoadComplete || activeRequest || !navigator.sendBeacon) return;
+        var state = currentPayloadState();
+        if (serverExists && state.json === lastSavedJson) return;
+        var body = new URLSearchParams();
+        body.append('action', 'save');
+        body.append('empresa_id', empresaId);
+        body.append('payload', state.json);
+        body.append('token', token || '');
+        body.append('expected_version', String(version || 0));
+        body.append('force', '0');
+        body.append('csrf_token', csrfToken);
+        navigator.sendBeacon(endpoint, new Blob([body.toString()], { type: 'application/x-www-form-urlencoded;charset=UTF-8' }));
+    });
+
+    window.bitacoraDraftStore = {
+        flush: flush,
+        clear: clearLocalMetadata,
+        getSubmissionMetadata: getSubmissionMetadata,
+        hasUnsavedChanges: function () { return dirty; }
+    };
+
+    initialLoadPromise = loadDraft(true);
+    initialLoadPromise.catch(function () {});
 });

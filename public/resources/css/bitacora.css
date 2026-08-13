@@ -90,6 +90,24 @@ body.bitacora-page {
     justify-content: flex-end;
 }
 
+.bit-admin-company-form {
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.bit-company-select {
+    min-width: 220px;
+}
+
+.app-logout-form {
+    display: inline;
+    margin: 0;
+}
+
+.bit-initial-hidden {
+    display: none;
+}
+
 .bit-logout {
     border: 0;
     border-radius: 14px;
@@ -173,11 +191,33 @@ body.bitacora-page {
     box-shadow: 0 10px 18px rgba(215, 25, 32, 0.22);
 }
 
-.bit-section-heading h4 {
+.bit-section-heading h3 {
     margin: 0;
     color: #222;
     font-weight: 850;
     font-size: 18px;
+}
+
+.bit-subsection {
+    margin: 10px 0 18px;
+    padding: 12px 16px;
+    border-left: 4px solid var(--bit-red);
+    border-radius: 0 14px 14px 0;
+    background: #f8f9fc;
+}
+
+.bit-subsection h4 {
+    margin: 0;
+    color: #2f3542;
+    font-size: 15px;
+    font-weight: 850;
+}
+
+.bit-subsection p {
+    margin: 5px 0 0;
+    color: var(--bit-muted);
+    font-size: 13px;
+    line-height: 1.45;
 }
 
 .bit-field {
@@ -188,7 +228,7 @@ body.bitacora-page {
     display: block;
     color: #2f3542;
     font-weight: 800;
-    font-size: 13px;
+    font-size: 12px;
     letter-spacing: -0.01em;
     margin-bottom: 8px;
 }
@@ -248,6 +288,25 @@ textarea.bit-input {
     border-radius: 16px;
     background: var(--bit-soft);
     border: 1px dashed #d7dce6;
+}
+
+.bit-repeat-item {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid #e4e8f0;
+}
+
+.bit-repeat-title {
+    margin-bottom: 12px;
+    color: var(--bit-red-dark);
+    font-weight: 850;
+}
+
+.bit-availability-message {
+    margin: -2px 0 10px;
+    font-family: var(--bit-mono);
 }
 
 .bit-actions {
@@ -315,6 +374,14 @@ textarea.bit-input {
     padding: 1.7rem;
 }
 
+.bitacora-page .swal2-confirm {
+    background-color: var(--bit-red) !important;
+}
+
+.bitacora-page .select2-container {
+    width: 100% !important;
+}
+
 .bit-swal-summary {
     text-align: left;
     display: grid;
@@ -354,6 +421,245 @@ textarea.bit-input {
 .bit-swal-badge.error {
     color: #991b1b;
     background: #fee2e2;
+}
+
+/* ===== Progreso y navegación por secciones ===== */
+
+.bit-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+    padding: 13px 18px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(229, 231, 235, 0.9);
+    box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
+}
+
+.bit-progress-track {
+    flex: 1 1 auto;
+    height: 10px;
+    border-radius: 999px;
+    background: #eceff4;
+    overflow: hidden;
+}
+
+.bit-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--bit-red), var(--bit-red-dark));
+    transition: width 0.35s ease;
+}
+
+.bit-progress-text {
+    flex: 0 0 auto;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--bit-ink);
+    white-space: nowrap;
+}
+
+.bit-draft-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    border: 1px solid #dce2ec;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
+}
+
+.bit-draft-status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.bit-draft-status small {
+    color: var(--bit-muted);
+    font-weight: 600;
+}
+
+.bit-draft-dot {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #64748b;
+    box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.12);
+}
+
+.bit-draft-bar[data-state="changes"] .bit-draft-dot {
+    background: #d97706;
+    box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.13);
+}
+
+.bit-draft-bar[data-state="saving"] .bit-draft-dot,
+.bit-draft-bar[data-state="searching"] .bit-draft-dot {
+    background: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13);
+    animation: bit-draft-pulse 1.2s ease-in-out infinite;
+}
+
+.bit-draft-bar[data-state="saved"] .bit-draft-dot {
+    background: #16a34a;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.13);
+}
+
+.bit-draft-bar[data-state="error"] .bit-draft-dot,
+.bit-draft-bar[data-state="offline"] .bit-draft-dot,
+.bit-draft-bar[data-state="conflict"] .bit-draft-dot {
+    background: var(--bit-red);
+    box-shadow: 0 0 0 4px rgba(215, 25, 32, 0.13);
+}
+
+.bit-draft-conflict-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+}
+
+.bit-draft-conflict-actions[hidden] {
+    display: none;
+}
+
+.bit-draft-conflict-actions button {
+    min-height: 38px;
+    padding: 7px 12px;
+}
+
+@keyframes bit-draft-pulse {
+    50% { opacity: 0.45; }
+}
+
+.bit-section-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+}
+
+.bit-section-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex: 0 0 auto;
+    border: 1px solid #dce2ec;
+    background: #fff;
+    color: #2f3542;
+    border-radius: 999px;
+    padding: 8px 13px;
+    font-size: 12.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bit-section-chip:hover,
+.bit-section-chip:focus-visible {
+    border-color: rgba(215, 25, 32, 0.55);
+    box-shadow: 0 8px 16px rgba(215, 25, 32, 0.14);
+    transform: translateY(-1px);
+}
+
+.bit-chip-dot {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #d5dae3;
+}
+
+.bit-section-chip.complete .bit-chip-dot {
+    background: #22c55e;
+}
+
+.bit-section-chip.partial .bit-chip-dot {
+    background: #f59e0b;
+}
+
+.bit-section-chip.none .bit-chip-dot {
+    background: #94a3b8;
+}
+
+.bit-section-chip.complete {
+    border-color: #bbe7c9;
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.bit-section-chip.partial {
+    border-color: #fde0b3;
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.bit-chip-count {
+    border-radius: 999px;
+    background: rgba(215, 25, 32, 0.12);
+    padding: 1px 7px;
+    font-size: 11px;
+    color: var(--bit-red-dark);
+}
+
+/* ===== Validación ===== */
+
+.bit-input.is-invalid,
+.bitacora-page .select2-selection.is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.12) !important;
+}
+
+.bit-swal-invalid-list {
+    text-align: left;
+    margin: 10px 0 0;
+    padding-left: 20px;
+    color: #2f3542;
+    font-weight: 600;
+}
+
+.bit-swal-warning {
+    margin: 12px 0 0;
+    color: #92400e;
+    font-weight: 700;
+}
+
+/* ===== Feedback por sede y autoguardado ===== */
+
+.bit-swal-toast {
+    border-left: 4px solid #d71920;
+}
+
+/* ===== Contador de caracteres ===== */
+
+.bit-char-counter {
+    margin-top: 4px;
+    font-size: 11.5px;
+    text-align: right;
+}
+
+/* ===== Accesibilidad ===== */
+
+.bitacora-page :focus-visible {
+    outline: 3px solid rgba(215, 25, 32, 0.5);
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+.bit-section-heading {
+    scroll-margin-top: 96px;
 }
 
 @media (max-width: 768px) {
@@ -401,4 +707,1692 @@ textarea.bit-input {
     .bit-actions button {
         width: 100%;
     }
+
+    .bit-progress-wrap {
+        flex-wrap: wrap;
+    }
+
+    .bit-draft-bar,
+    .bit-draft-status {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .bit-draft-conflict-actions,
+    .bit-draft-conflict-actions button {
+        width: 100%;
+    }
+
+    .bit-progress-text {
+        font-size: 12px;
+    }
+}
+
+/* ===== Dirección editorial: bitácora de operaciones ===== */
+:root {
+    --bit-red: #d71920;
+    --bit-red-dark: #8b1116;
+    --bit-ink: #1f2937;
+    --bit-muted: #6b7280;
+    --bit-line: #e5e7eb;
+    --bit-soft: #f6f7fb;
+    --bit-card: #ffffff;
+    --bit-paper: #f5f7fb;
+    --bit-navy: #1f2937;
+    --bit-amber: var(--bit-red);
+    --bit-shadow: 0 26px 70px rgba(31, 41, 55, 0.14);
+    --bit-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+    --bit-body: 'Avenir Next', 'Trebuchet MS', sans-serif;
+    --bit-mono: 'IBM Plex Mono', 'Cascadia Mono', 'Courier New', monospace;
+}
+
+html {
+    background: var(--bit-paper);
+}
+
+body.bitacora-page {
+    position: relative;
+    overflow-x: hidden;
+    background:
+        radial-gradient(circle at 88% 4%, rgba(215, 25, 32, 0.13), transparent 24rem),
+        radial-gradient(circle at 6% 74%, rgba(107, 114, 128, 0.12), transparent 26rem),
+        linear-gradient(135deg, #f7f2f2 0%, var(--bit-paper) 48%, #eef1f6 100%);
+    background-attachment: fixed;
+    color: var(--bit-ink);
+    font-family: var(--bit-body);
+}
+
+body.bitacora-page::before {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    content: '';
+    opacity: 0.24;
+    background-image:
+        linear-gradient(rgba(31, 41, 55, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(31, 41, 55, 0.045) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+
+.bit-shell {
+    position: relative;
+    z-index: 1;
+    width: min(1480px, calc(100% - 48px));
+    padding: 30px 0 64px;
+}
+
+.bit-topbar {
+    align-items: flex-start;
+    padding: 0 0 22px;
+    border-bottom: 1px solid rgba(31, 41, 55, 0.2);
+}
+
+.bit-brand {
+    align-items: flex-start;
+    gap: 18px;
+}
+
+.bit-brand-logo {
+    width: 68px;
+    height: 68px;
+    border: 1px solid rgba(31, 41, 55, 0.18);
+    border-radius: 12px;
+    padding: 9px;
+    background: var(--bit-card);
+    box-shadow: 7px 7px 0 rgba(215, 25, 32, 0.42);
+}
+
+.bit-brand-copy {
+    min-width: 0;
+}
+
+.bit-eyebrow,
+.bit-header-caption,
+.bit-card-kicker,
+.bit-progress-kicker,
+.bit-draft-status,
+.bit-admin-company-form label {
+    font-family: var(--bit-mono);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.bit-eyebrow {
+    margin-bottom: 7px;
+    color: var(--bit-red-dark);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+}
+
+.bit-title {
+    color: var(--bit-navy);
+    font-size: clamp(31px, 4vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.055em;
+    line-height: 0.98;
+}
+
+.bit-header-caption {
+    margin: 10px 0 0;
+    color: var(--bit-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.bit-session {
+    gap: 9px;
+    max-width: 680px;
+}
+
+.bit-admin-company-form {
+    padding: 7px 9px 7px 12px;
+    border-left: 2px solid var(--bit-amber);
+    border-radius: 3px;
+    background: rgba(255, 253, 248, 0.62);
+}
+
+.bit-admin-company-form label {
+    color: var(--bit-muted);
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.bit-company-select {
+    min-width: 205px;
+    border-color: var(--bit-line) !important;
+    border-radius: 7px !important;
+    background: var(--bit-card) !important;
+    color: var(--bit-navy);
+    font-family: var(--bit-body);
+    font-weight: 700;
+}
+
+.bit-user-pill {
+    padding: 8px 2px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--bit-muted);
+    font-family: var(--bit-mono);
+    font-size: 10px;
+    letter-spacing: 0.02em;
+}
+
+.bit-user-pill strong {
+    color: var(--bit-navy);
+}
+
+.bit-logout {
+    border-radius: 7px;
+    padding: 10px 13px;
+    background: var(--bit-navy);
+    box-shadow: 4px 4px 0 rgba(215, 25, 32, 0.5);
+    font-family: var(--bit-mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.bit-logout:hover,
+.bit-logout:focus {
+    background: var(--bit-red-dark);
+    box-shadow: 2px 2px 0 rgba(215, 25, 32, 0.5);
+    transform: translate(2px, 2px);
+}
+
+.bit-progress-wrap {
+    position: sticky;
+    top: 12px;
+    z-index: 12;
+    display: grid;
+    grid-template-columns: minmax(190px, 0.34fr) 1fr;
+    gap: 18px;
+    align-items: center;
+    margin: 20px 0 11px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255, 253, 248, 0.18);
+    border-radius: 12px;
+    background: rgba(31, 41, 55, 0.96);
+    box-shadow: 0 16px 30px rgba(31, 41, 55, 0.2);
+    backdrop-filter: blur(14px);
+}
+
+.bit-progress-copy {
+    display: grid;
+    gap: 3px;
+}
+
+.bit-progress-kicker {
+    color: rgba(255, 253, 248, 0.58);
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.bit-progress-text {
+    color: var(--bit-card);
+    font-family: var(--bit-body);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.bit-progress-track {
+    height: 8px;
+    background: rgba(255, 253, 248, 0.16);
+}
+
+.bit-progress-fill {
+    background: linear-gradient(90deg, var(--bit-amber), #f7f2f2);
+    box-shadow: 0 0 18px rgba(215, 25, 32, 0.55);
+}
+
+.bit-draft-bar {
+    margin-bottom: 11px;
+    border: 1px solid rgba(31, 41, 55, 0.16);
+    border-left: 4px solid var(--bit-amber);
+    border-radius: 9px;
+    background: rgba(255, 253, 248, 0.86);
+    box-shadow: 0 10px 22px rgba(31, 41, 55, 0.07);
+}
+
+.bit-draft-status {
+    color: var(--bit-navy);
+    font-size: 11px;
+    letter-spacing: 0.045em;
+}
+
+.bit-section-nav {
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 3px 0 9px;
+    border-bottom: 1px solid rgba(31, 41, 55, 0.14);
+}
+
+.bit-section-chip {
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 8px 10px;
+    background: rgba(255, 253, 248, 0.48);
+    color: var(--bit-muted);
+    font-family: var(--bit-mono);
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.bit-section-chip:hover,
+.bit-section-chip:focus-visible,
+.bit-section-chip.is-current {
+    border-color: rgba(215, 25, 32, 0.28);
+    background: var(--bit-card);
+    color: var(--bit-red-dark);
+    box-shadow: 3px 3px 0 rgba(215, 25, 32, 0.35);
+    transform: translateY(-1px);
+}
+
+.bit-section-chip.complete {
+    border-color: rgba(54, 113, 79, 0.22);
+    background: rgba(235, 246, 236, 0.8);
+    color: #2d6844;
+}
+
+.bit-section-chip.partial {
+    border-color: rgba(178, 124, 41, 0.28);
+    background: rgba(255, 248, 226, 0.85);
+    color: #8a5a16;
+}
+
+.bit-card {
+    border: 1px solid rgba(31, 41, 55, 0.2);
+    border-radius: 18px;
+    background: var(--bit-card);
+    box-shadow: var(--bit-shadow);
+    animation: bit-sheet-in 0.55s ease both;
+}
+
+.bit-card-header {
+    grid-template-columns: 1fr auto;
+    min-height: 142px;
+    padding: 28px 32px;
+    border-radius: 17px 17px 0 0;
+    background:
+        linear-gradient(120deg, rgba(31, 41, 55, 0.98), rgba(31, 41, 55, 0.92)),
+        var(--bit-navy);
+}
+
+.bit-card-header-copy {
+    max-width: 780px;
+}
+
+.bit-card-kicker {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--bit-amber);
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.bit-card-header h2 {
+    color: var(--bit-card);
+    font-size: clamp(24px, 3vw, 36px);
+    font-weight: 700;
+    letter-spacing: -0.045em;
+}
+
+.bit-card-header p {
+    max-width: 650px;
+    margin-top: 8px;
+    color: rgba(255, 253, 248, 0.72);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.bit-card-stamp {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 9px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 253, 248, 0.28);
+    color: var(--bit-card);
+    font-family: var(--bit-mono);
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+
+.bit-card-stamp strong {
+    color: var(--bit-amber);
+    font-family: var(--bit-display);
+    font-size: 24px;
+    letter-spacing: -0.08em;
+}
+
+.bit-card-body {
+    padding: 28px 32px 34px;
+    background: linear-gradient(180deg, rgba(255, 253, 248, 0.97), rgba(250, 246, 238, 0.98));
+    border-radius: 0 0 17px 17px;
+}
+
+.bit-section-heading {
+    top: 86px;
+    z-index: 5;
+    margin: 30px 0 20px;
+    padding: 12px 0 11px;
+    border: 0;
+    border-bottom: 1px solid rgba(31, 41, 55, 0.22);
+    border-radius: 0;
+    background: rgba(255, 253, 248, 0.92);
+    box-shadow: 0 8px 12px rgba(243, 237, 227, 0.92);
+    backdrop-filter: blur(8px);
+}
+
+.bit-section-heading::after {
+    flex: 1 1 auto;
+    height: 1px;
+    margin-left: 10px;
+    background: var(--bit-amber);
+    content: '';
+    opacity: 0.65;
+}
+
+.bit-section-index {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    background: var(--bit-amber);
+    box-shadow: 3px 3px 0 rgba(31, 41, 55, 0.22);
+    color: var(--bit-navy);
+    font-family: var(--bit-mono);
+    font-size: 11px;
+}
+
+.bit-section-heading h3 {
+    color: var(--bit-navy);
+    color: var(--bit-ink);
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.bit-subsection {
+    margin: 12px 0 20px;
+    padding: 14px 18px;
+    border: 1px solid rgba(31, 41, 55, 0.12);
+    border-left: 4px solid var(--bit-red);
+    border-radius: 0 10px 10px 0;
+    background: rgba(241, 235, 225, 0.72);
+}
+
+.bit-subsection h4 {
+    color: var(--bit-navy);
+    font-size: 18px;
+    font-weight: 700;
+    padding-left: 10px;
+}
+
+.bit-subsection p {
+    max-width: 780px;
+    color: var(--bit-muted);
+    font-size: 13px;
+    padding-left: 12px;
+}
+
+.bit-field {
+    margin-bottom: 21px;
+}
+
+.bit-label {
+    color: var(--bit-navy);
+    font-family: var(--bit-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.045em;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+
+.bit-label .text-danger {
+    color: var(--bit-red) !important;
+}
+
+.bit-input,
+.bitacora-page .select2-container--default .select2-selection--multiple,
+.bitacora-page .select2-container--default .select2-selection--single {
+    min-height: 48px;
+    border: 1px solid #cfc8bc !important;
+    border-radius: 9px !important;
+    background: rgba(255, 255, 255, 0.82) !important;
+    color: var(--bit-ink);
+    box-shadow: inset 0 -2px 0 rgba(31, 41, 55, 0.035);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.bit-input:hover,
+.bitacora-page .select2-container--default .select2-selection:hover {
+    border-color: rgba(215, 25, 32, 0.5) !important;
+    background: #fff !important;
+}
+
+.bit-input:focus,
+.bitacora-page .select2-container--default.select2-container--focus .select2-selection--multiple,
+.bitacora-page .select2-container--open .select2-selection--single {
+    border-color: var(--bit-red) !important;
+    background: #fff !important;
+    box-shadow: 0 0 0 3px rgba(215, 25, 32, 0.13), 0 5px 0 rgba(215, 25, 32, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+textarea.bit-input {
+    min-height: 116px;
+    line-height: 1.55;
+}
+
+.bit-radio-group {
+    gap: 8px;
+}
+
+.bit-radio-pill {
+    min-height: 42px;
+    border: 1px solid #cfc8bc;
+    border-radius: 8px;
+    padding: 9px 13px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--bit-muted);
+    font-family: var(--bit-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.bit-radio-pill:hover,
+.bit-radio-pill:has(input:focus-visible) {
+    border-color: var(--bit-red);
+    color: var(--bit-red-dark);
+}
+
+.bit-radio-pill:has(input:checked) {
+    border-color: var(--bit-red);
+    background: var(--bit-red);
+    color: #ffffff;
+    box-shadow: 3px 3px 0 rgba(215, 25, 32, 0.42);
+    transform: translateY(-1px);
+}
+
+.bit-radio-pill input {
+    accent-color: var(--bit-amber);
+}
+
+.bit-detail-panel {
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px dashed rgba(215, 25, 32, 0.32);
+    border-radius: 10px;
+    background: rgba(241, 235, 225, 0.74);
+}
+
+.bit-repeat-item {
+    margin-top: 14px;
+    padding: 15px;
+    border: 1px solid rgba(31, 41, 55, 0.14);
+    border-top: 3px solid var(--bit-amber);
+    border-radius: 9px;
+    background: rgba(255, 253, 248, 0.96);
+    box-shadow: 0 8px 16px rgba(31, 41, 55, 0.05);
+}
+
+.bit-repeat-title {
+    margin-bottom: 13px;
+    color: var(--bit-red-dark);
+    font-family: var(--bit-mono);
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.bit-actions {
+    bottom: 12px;
+    margin-top: 32px;
+    padding: 11px;
+    border: 1px solid rgba(255, 253, 248, 0.18);
+    border-radius: 11px;
+    background: rgba(31, 41, 55, 0.96);
+    box-shadow: 0 18px 35px rgba(31, 41, 55, 0.2);
+    backdrop-filter: blur(14px);
+}
+
+.bit-btn-primary,
+.bit-btn-secondary,
+.bit-btn-ghost,
+.bit-btn-pdf {
+    min-height: 44px;
+    border-radius: 7px;
+    padding: 10px 15px;
+    font-family: var(--bit-mono);
+    font-size: 10px;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.bit-btn-primary {
+    background: var(--bit-red);
+    box-shadow: 4px 4px 0 rgba(215, 25, 32, 0.55);
+}
+
+.bit-btn-secondary {
+    background: transparent;
+    border: 1px solid rgba(255, 253, 248, 0.28);
+    color: var(--bit-card);
+}
+
+.bit-btn-ghost {
+    border-color: rgba(215, 25, 32, 0.24);
+    background: rgba(255, 253, 248, 0.95);
+    color: var(--bit-red-dark);
+}
+
+.bit-btn-pdf {
+    border-color: transparent;
+    background: var(--bit-amber);
+    color: var(--bit-navy);
+}
+
+.bit-btn-primary:hover,
+.bit-btn-secondary:hover,
+.bit-btn-ghost:hover,
+.bit-btn-pdf:hover {
+    transform: translateY(-2px);
+}
+
+.bit-btn-primary:hover {
+    box-shadow: 5px 6px 0 rgba(215, 25, 32, 0.5);
+}
+
+.bit-btn-secondary:hover {
+    border-color: var(--bit-amber);
+    color: var(--bit-card);
+}
+
+.bit-btn-pdf:hover {
+    box-shadow: 4px 4px 0 rgba(255, 253, 248, 0.38);
+}
+
+.bitacora-page .swal2-popup.bit-swal-popup {
+    border: 1px solid rgba(31, 41, 55, 0.18);
+    border-radius: 14px;
+    background: var(--bit-card);
+    font-family: var(--bit-body);
+}
+
+.bitacora-page .swal2-title {
+    color: var(--bit-navy);
+}
+
+.bitacora-page .swal2-confirm {
+    background: var(--bit-red) !important;
+    border-radius: 7px !important;
+}
+
+.bitacora-page .select2-container {
+    font-family: var(--bit-body);
+}
+
+.bit-char-counter {
+    color: var(--bit-muted) !important;
+    font-family: var(--bit-mono);
+    font-size: 9px;
+    letter-spacing: 0.03em;
+}
+
+.bitacora-page :focus-visible {
+    outline: 3px solid rgba(215, 25, 32, 0.9);
+    outline-offset: 3px;
+}
+
+@keyframes bit-sheet-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+    .bit-topbar {
+        flex-direction: column;
+    }
+
+    .bit-session {
+        width: 100%;
+        max-width: none;
+        justify-content: flex-start;
+    }
+
+    .bit-section-heading {
+        top: 78px;
+    }
+}
+
+@media (max-width: 768px) {
+    .bit-shell {
+        width: min(100% - 22px, 1480px);
+        padding-top: 16px;
+    }
+
+    .bit-brand-logo {
+        width: 56px;
+        height: 56px;
+    }
+
+    .bit-title {
+        font-size: clamp(29px, 9vw, 42px);
+    }
+
+    .bit-header-caption {
+        font-size: 9px;
+        line-height: 1.5;
+    }
+
+    .bit-session,
+    .bit-admin-company-form {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .bit-admin-company-form {
+        width: 100%;
+        gap: 6px;
+    }
+
+    .bit-company-select {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .bit-user-pill,
+    .bit-logout {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .bit-progress-wrap {
+        position: static;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .bit-progress-track {
+        order: 2;
+    }
+
+    .bit-progress-text {
+        white-space: normal;
+    }
+
+    .bit-card-header {
+        grid-template-columns: 1fr;
+        min-height: 0;
+        padding: 24px 20px;
+    }
+
+    .bit-card-stamp {
+        justify-self: start;
+    }
+
+    .bit-card-body {
+        padding: 19px 16px 24px;
+    }
+
+    .bit-section-heading {
+        position: static;
+        margin-top: 22px;
+        padding-top: 10px;
+    }
+
+    .bit-section-heading h3 {
+        font-size: 18px;
+    }
+
+    .bit-card-body .form-row > .bit-field[class*="col-md-"] {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .bit-actions {
+        position: static;
+        justify-content: stretch;
+    }
+
+    .bit-actions button {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== Lenguaje compartido: editorial + administración ===== */
+:root {
+    --bit-paper: #f6f7fb;
+    --bit-shadow: 0 22px 60px rgba(31, 41, 55, 0.14);
+    --bit-body: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html {
+    background: var(--bit-paper);
+}
+
+body.bitacora-page {
+    overflow-x: clip;
+    background:
+        radial-gradient(circle at top left, rgba(215, 25, 32, 0.15), transparent 30rem),
+        linear-gradient(180deg, #f7f2f2 0%, #f5f7fb 45%, #eef1f6 100%);
+    background-attachment: fixed;
+    font-family: var(--bit-body);
+}
+
+body.bitacora-page::before {
+    opacity: 0.12;
+}
+
+.bit-shell {
+    width: min(1220px, calc(100% - 28px));
+    padding: 22px 0 48px;
+}
+
+.bit-topbar {
+    align-items: center;
+    padding: 0;
+    border-bottom: 0;
+    margin-bottom: 18px;
+}
+
+.bit-brand {
+    align-items: center;
+    gap: 14px;
+}
+
+.bit-brand-logo {
+    width: 58px;
+    height: 58px;
+    border: 0;
+    border-radius: 18px;
+    padding: 8px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(139, 17, 22, 0.18);
+}
+
+.bit-title {
+    font-size: clamp(24px, 3vw, 34px);
+    line-height: 1;
+}
+
+.bit-session {
+    max-width: none;
+}
+
+.bit-user-pill {
+    padding: 9px 13px;
+    border: 1px solid rgba(229, 231, 235, 0.9);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
+    color: var(--bit-ink);
+    font-family: var(--bit-body);
+    font-size: inherit;
+    font-weight: 700;
+    letter-spacing: normal;
+}
+
+.bit-user-pill strong {
+    color: var(--bit-red-dark);
+}
+
+.bit-logout {
+    border-radius: 14px;
+    padding: 11px 16px;
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    box-shadow: 0 14px 28px rgba(215, 25, 32, 0.28);
+    font-family: var(--bit-body);
+    font-size: inherit;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+.bit-logout:hover,
+.bit-logout:focus {
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    box-shadow: 0 18px 34px rgba(215, 25, 32, 0.34);
+    transform: translateY(-1px);
+}
+
+.bit-progress-wrap {
+    position: static;
+    display: flex;
+    grid-template-columns: none;
+    gap: 14px;
+    margin: 0 0 12px;
+    padding: 13px 18px;
+    border: 1px solid rgba(229, 231, 235, 0.9);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
+    backdrop-filter: none;
+}
+
+.bit-progress-kicker {
+    color: var(--bit-muted);
+}
+
+.bit-progress-text {
+    color: var(--bit-ink);
+}
+
+.bit-progress-track {
+    height: 10px;
+    background: #eceff4;
+}
+
+.bit-progress-fill {
+    background: linear-gradient(90deg, var(--bit-red), var(--bit-red-dark));
+    box-shadow: none;
+}
+
+.bit-draft-bar {
+    border: 1px solid var(--bit-line);
+    border-left: 4px solid var(--bit-red);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.bit-section-nav {
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 0 0 6px;
+    border-bottom: 0;
+}
+
+.bit-section-chip {
+    border: 1px solid var(--bit-line);
+    border-radius: 999px;
+    padding: 9px 18px;
+    background: #fff;
+    color: var(--bit-muted);
+    font-family: var(--bit-body);
+    font-size: 0.9rem;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+.bit-section-chip:hover,
+.bit-section-chip:focus-visible,
+.bit-section-chip.is-current {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    color: #fff;
+    box-shadow: 0 12px 24px rgba(215, 25, 32, 0.25);
+    transform: none;
+}
+
+.bit-section-chip.complete {
+    border-color: #bbe7c9;
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.bit-section-chip.partial {
+    border-color: #fde0b3;
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.bit-card {
+    border: 1px solid var(--bit-line);
+    border-radius: 18px;
+    background: var(--bit-card);
+    box-shadow: var(--bit-shadow);
+}
+
+.bit-card-header {
+    grid-template-columns: 1fr auto;
+    min-height: 0;
+    padding: 18px 20px;
+    border-radius: 18px 18px 0 0;
+    background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
+}
+
+.bit-card-header h2 {
+    color: #16181d;
+    font-size: clamp(23px, 3vw, 32px);
+}
+
+.bit-card-header p {
+    color: var(--bit-muted);
+}
+
+.bit-card-kicker {
+    color: var(--bit-red-dark);
+}
+
+.bit-card-stamp {
+    border-color: rgba(215, 25, 32, 0.28);
+    color: var(--bit-red-dark);
+}
+
+.bit-card-stamp strong {
+    color: var(--bit-red-dark);
+}
+
+.bit-card-body {
+    padding: 20px;
+    border-radius: 0 0 18px 18px;
+    background: var(--bit-card);
+}
+
+.bit-section-heading {
+    position: static;
+    margin: 28px 0 18px;
+    padding: 14px 16px;
+    border: 1px solid rgba(215, 25, 32, 0.14);
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(215, 25, 32, 0.09), rgba(139, 17, 22, 0.04));
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.bit-section-heading::after {
+    display: none;
+}
+
+.bit-section-index {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    color: #fff;
+    box-shadow: 0 10px 18px rgba(215, 25, 32, 0.22);
+}
+
+.bit-section-heading h3 {
+    color: #222;
+    font-size: 20px;
+}
+
+.bit-subsection {
+    border: 0;
+    border-left: 4px solid var(--bit-red);
+    border-radius: 0 14px 14px 0;
+    background: #f8f9fc;
+}
+
+.bit-subsection h4 {
+    color: #2f3542;
+}
+
+.bit-field {
+    margin-bottom: 18px;
+}
+
+.bit-input,
+.bitacora-page .select2-container--default .select2-selection--multiple,
+.bitacora-page .select2-container--default .select2-selection--single {
+    min-height: 46px;
+    border: 1px solid #d9dee8 !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    box-shadow: 0 1px 0 rgba(17, 24, 39, 0.02);
+}
+
+.bit-input:hover,
+.bitacora-page .select2-container--default .select2-selection:hover {
+    border-color: rgba(215, 25, 32, 0.5) !important;
+    background: #fff !important;
+}
+
+.bit-input:focus,
+.bitacora-page .select2-container--default.select2-container--focus .select2-selection--multiple,
+.bitacora-page .select2-container--open .select2-selection--single {
+    border-color: rgba(215, 25, 32, 0.75) !important;
+    box-shadow: 0 0 0 0.2rem rgba(215, 25, 32, 0.12) !important;
+    transform: none;
+}
+
+.bit-radio-pill {
+    border: 1px solid #dce2ec;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--bit-ink);
+    font-family: var(--bit-mono);
+    font-size: inherit;
+    letter-spacing: normal;
+    text-transform: uppercase;
+}
+
+.bit-radio-pill:has(input:checked) {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    box-shadow: 0 8px 18px rgba(215, 25, 32, 0.2);
+}
+
+.bit-detail-panel {
+    border-color: #d7dce6;
+    border-radius: 16px;
+    background: var(--bit-soft);
+}
+
+.bit-repeat-item {
+    border: 1px solid #e4e8f0;
+    border-top-width: 1px;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: none;
+}
+
+.bit-actions {
+    position: sticky;
+    bottom: 16px;
+    margin-top: 28px;
+    padding: 14px;
+    border: 1px solid rgba(229, 231, 235, 0.95);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 18px 42px rgba(31, 41, 55, 0.13);
+    backdrop-filter: blur(10px);
+}
+
+.bit-btn-primary,
+.bit-btn-secondary,
+.bit-btn-ghost,
+.bit-btn-pdf {
+    border-radius: 14px;
+    min-height: 44px;
+    padding: 11px 16px;
+    font-family: var(--bit-body);
+    font-size: inherit;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+.bit-btn-primary {
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    box-shadow: 0 14px 28px rgba(215, 25, 32, 0.28);
+}
+
+.bit-btn-secondary {
+    background: #2f3542;
+}
+
+.bit-btn-ghost {
+    border: 1px solid var(--bit-line);
+    background: #fff;
+    color: var(--bit-ink);
+}
+
+.bit-btn-pdf {
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    color: #253047;
+}
+
+/* Estados conservados del comportamiento clásico de los botones. */
+.bit-btn-primary,
+.bit-btn-secondary,
+.bit-btn-ghost,
+.bit-btn-pdf {
+    cursor: pointer;
+    transition: filter 0.2s ease, transform 0.15s ease, box-shadow 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.bit-btn-primary:hover,
+.bit-btn-secondary:hover,
+.bit-btn-ghost:hover,
+.bit-btn-pdf:hover {
+    transform: translateY(-2px);
+}
+
+.bit-btn-primary:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 16px 32px rgba(215, 25, 32, 0.32);
+}
+
+.bit-btn-secondary:hover {
+    border-color: var(--bit-red-dark);
+    background: var(--bit-red-dark);
+    color: #fff;
+}
+
+.bit-btn-ghost:hover {
+    border-color: #f3c6c8;
+    background: #fff;
+    color: var(--bit-red-dark);
+}
+
+.bit-btn-pdf:hover {
+    filter: brightness(1.04);
+    box-shadow: 0 8px 18px rgba(31, 41, 55, 0.12);
+}
+
+.bit-btn-primary:active,
+.bit-btn-secondary:active,
+.bit-btn-ghost:active,
+.bit-btn-pdf:active {
+    transform: scale(0.98);
+}
+
+.bit-btn-primary:disabled,
+.bit-btn-secondary:disabled,
+.bit-btn-ghost:disabled,
+.bit-btn-pdf:disabled {
+    opacity: 0.72;
+    cursor: not-allowed;
+    filter: none;
+    transform: none;
+    box-shadow: none;
+}
+
+@media (max-width: 900px) {
+    .bit-topbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .bit-session {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .bit-shell {
+        width: min(100% - 22px, 1220px);
+        padding-top: 16px;
+    }
+
+    .bit-brand {
+        align-items: flex-start;
+    }
+
+    .bit-card-header,
+    .bit-card-body {
+        padding: 18px;
+    }
+
+    .bit-card-header {
+        grid-template-columns: 1fr;
+    }
+
+    .bit-card-stamp {
+        justify-self: start;
+    }
+
+    .bit-user-pill,
+    .bit-logout {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .bit-actions {
+        position: static;
+        justify-content: stretch;
+    }
+
+    .bit-actions button {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}
+
+/* ===== Bitácora operativa de restaurante ===== */
+body.bitacora-page {
+    background:
+        radial-gradient(circle at 92% 0%, rgba(215, 25, 32, 0.1), transparent 24rem),
+        linear-gradient(180deg, #f7f2f2 0%, #f6f7fb 52%, #eef1f6 100%);
+}
+
+body.bitacora-page::before {
+    opacity: 0.16;
+    background-size: 26px 26px;
+    mask-image: linear-gradient(to bottom, black, transparent 90%);
+}
+
+.bit-shell {
+    padding-top: 26px;
+}
+
+.bit-topbar {
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(31, 41, 55, 0.16);
+}
+
+.bit-brand-logo {
+    border: 1px solid rgba(229, 231, 235, 0.95);
+    border-radius: 14px;
+    box-shadow: 5px 5px 0 rgba(215, 25, 32, 0.3), 0 12px 28px rgba(31, 41, 55, 0.1);
+}
+
+.bit-eyebrow {
+    margin-bottom: 6px;
+    letter-spacing: 0.16em;
+}
+
+.bit-title {
+    font-size: clamp(28px, 3.8vw, 44px);
+    letter-spacing: -0.05em;
+}
+
+.bit-header-caption {
+    margin-top: 8px;
+}
+
+.bit-admin-company-form {
+    border-left-color: var(--bit-red);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.bit-progress-wrap {
+    position: sticky;
+    top: 12px;
+    z-index: 12;
+    display: grid;
+    grid-template-columns: minmax(190px, 0.34fr) 1fr;
+    gap: 18px;
+    align-items: center;
+    margin: 20px 0 12px;
+    padding: 12px 16px;
+    border: 1px solid rgba(31, 41, 55, 0.12);
+    border-radius: 14px;
+    background: rgba(31, 41, 55, 0.96);
+    box-shadow: 0 16px 30px rgba(31, 41, 55, 0.18);
+    color: #fff;
+}
+
+.bit-progress-kicker {
+    color: rgba(255, 255, 255, 0.62);
+}
+
+.bit-progress-text {
+    color: #fff;
+}
+
+.bit-progress-track {
+    height: 9px;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.bit-progress-fill {
+    background: linear-gradient(90deg, var(--bit-red), #f6f7fb);
+    box-shadow: 0 0 16px rgba(215, 25, 32, 0.44);
+}
+
+.bit-draft-bar {
+    border-left-width: 5px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.94);
+}
+
+.bit-section-nav {
+    margin-bottom: 18px;
+    padding: 0 0 7px;
+    border-bottom: 1px solid rgba(31, 41, 55, 0.14);
+}
+
+.bit-section-chip {
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: var(--bit-mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.bit-section-chip:hover,
+.bit-section-chip:focus-visible,
+.bit-section-chip.is-current {
+    border-color: rgba(215, 25, 32, 0.26);
+    background: #fff;
+    color: var(--bit-red-dark);
+    box-shadow: 3px 3px 0 rgba(215, 25, 32, 0.26);
+    transform: translateY(-1px);
+}
+
+.bit-card {
+    border-color: rgba(31, 41, 55, 0.16);
+    border-radius: 18px;
+    box-shadow: 0 22px 60px rgba(31, 41, 55, 0.14);
+}
+
+.bit-card-header {
+    position: relative;
+    min-height: 136px;
+    padding: 24px 28px;
+    border-bottom: 4px solid var(--bit-red);
+    border-radius: 0;
+    background: linear-gradient(120deg, rgba(31, 41, 55, 0.99), rgba(31, 41, 55, 0.92));
+}
+
+.bit-card-header::before {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 6px;
+    background: var(--bit-red);
+    content: '';
+}
+
+.bit-card-header-copy,
+.bit-card-stamp {
+    position: relative;
+    z-index: 1;
+}
+
+.bit-card-kicker {
+    color: rgba(255, 255, 255, 0.62);
+}
+
+.bit-card-header h2 {
+    color: #fff;
+    font-size: clamp(24px, 3vw, 36px);
+}
+
+.bit-card-header p {
+    color: rgba(255, 255, 255, 0.74);
+}
+
+.bit-card-stamp {
+    border-color: rgba(255, 255, 255, 0.34);
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.bit-card-stamp strong {
+    color: #fff;
+    font-family: var(--bit-mono);
+}
+
+.bit-card-body {
+    padding: 28px;
+    background: linear-gradient(180deg, #fff 0%, #f6f7fb 100%);
+}
+
+.bit-section-heading {
+    position: sticky;
+    top: 78px;
+    z-index: 5;
+    margin: 28px 0 18px;
+    padding: 12px 14px;
+    border: 1px solid rgba(215, 25, 32, 0.16);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 8px 16px rgba(31, 41, 55, 0.08);
+    backdrop-filter: blur(8px);
+}
+
+.bit-section-heading::after {
+    display: block;
+    flex: 1 1 auto;
+    height: 1px;
+    margin-left: 10px;
+    background: var(--bit-red);
+    content: '';
+    opacity: 0.55;
+}
+
+.bit-section-index {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    color: #fff;
+    box-shadow: 3px 3px 0 rgba(31, 41, 55, 0.18);
+}
+
+.bit-section-heading h3 {
+    color: var(--bit-ink);
+    font-size: 21px;
+}
+
+.bit-subsection {
+    margin: 12px 0 20px;
+    padding: 14px 18px;
+    border: 1px solid var(--bit-line);
+    border-left: 4px solid var(--bit-red);
+    border-radius: 0 12px 12px 0;
+    background: #f8f9fc;
+}
+
+.bit-subsection h4 {
+    color: var(--bit-ink);
+    font-size: 16px;
+}
+
+.bit-availability-message {
+    color: var(--bit-muted) !important;
+    font-size: 12px;
+}
+
+.bit-label {
+    color: var(--bit-ink);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+}
+
+.bit-input,
+.bitacora-page .select2-container--default .select2-selection--multiple,
+.bitacora-page .select2-container--default .select2-selection--single {
+    min-height: 46px;
+    border-color: #d9dee8 !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    box-shadow: 0 1px 0 rgba(17, 24, 39, 0.02);
+}
+
+.bit-input:focus,
+.bitacora-page .select2-container--default.select2-container--focus .select2-selection--multiple,
+.bitacora-page .select2-container--open .select2-selection--single {
+    border-color: var(--bit-red) !important;
+    box-shadow: 0 0 0 0.2rem rgba(215, 25, 32, 0.12) !important;
+}
+
+textarea.bit-input {
+    min-height: 112px;
+}
+
+.bit-radio-pill {
+    min-height: 40px;
+    border-color: #d9dee8;
+    border-radius: 999px;
+    padding: 9px 14px;
+    background: #fff;
+    color: var(--bit-ink);
+    font-family: var(--bit-body);
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: normal;
+    text-transform: uppercase;
+}
+
+.bit-radio-pill:hover,
+.bit-radio-pill:has(input:focus-visible) {
+    border-color: rgba(215, 25, 32, 0.58);
+    color: var(--bit-red-dark);
+}
+
+.bit-radio-pill:has(input:checked) {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    box-shadow: 0 8px 18px rgba(215, 25, 32, 0.2);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.bit-detail-panel {
+    border: 1px dashed #d7dce6;
+    border-radius: 12px;
+    background: #f6f7fb;
+}
+
+.bit-repeat-item {
+    border: 1px solid #e4e8f0;
+    border-top: 3px solid var(--bit-red);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 8px 18px rgba(31, 41, 55, 0.06);
+}
+
+.bit-repeat-title {
+    color: var(--bit-red-dark);
+    font-size: 10px;
+}
+
+.bit-actions {
+    position: sticky;
+    bottom: 16px;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 28px;
+    padding: 14px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(229, 231, 235, 0.95);
+    box-shadow: 0 18px 42px rgba(31, 41, 55, 0.13);
+    backdrop-filter: blur(10px);
+}
+
+.bit-btn-primary,
+.bit-btn-secondary,
+.bit-btn-ghost,
+.bit-btn-pdf {
+    border: 0;
+    border-radius: 15px;
+    min-height: 46px;
+    padding: 11px 16px;
+    font-weight: 850;
+}
+
+.bit-btn-primary {
+    background: linear-gradient(135deg, var(--bit-red), var(--bit-red-dark));
+    box-shadow: 0 14px 28px rgba(215, 25, 32, 0.28);
+}
+
+.bit-btn-secondary {
+    background: var(--bit-ink);
+}
+
+.bit-btn-ghost {
+    color: var(--bit-red-dark);
+    background: #fff2f2;
+    border: 1px solid rgba(215, 25, 32, 0.18);
+}
+
+.bit-btn-pdf {
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    color: #253047;
+}
+
+@media (max-width: 900px) {
+    .bit-progress-wrap {
+        position: static;
+    }
+
+    .bit-section-heading {
+        top: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .bit-shell {
+        padding-top: 18px;
+    }
+
+    .bit-card-header,
+    .bit-card-body {
+        padding: 20px 18px;
+    }
+
+    .bit-section-heading {
+        position: static;
+    }
+}
+
+/* ===== Pulido de interacciones y transiciones ===== */
+.bitacora-page .bit-card,
+.bitacora-page .bit-progress-wrap,
+.bitacora-page .bit-draft-bar,
+.bitacora-page .bit-section-nav,
+.bitacora-page .bit-section-heading,
+.bitacora-page .bit-actions,
+.bitacora-page .bit-detail-panel,
+.bitacora-page .bit-repeat-item {
+    transition: border-color 0.24s ease,
+        box-shadow 0.24s ease,
+        background-color 0.24s ease,
+        transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bitacora-page .bit-repeat-item {
+    animation: bit-item-in 0.28s ease both;
+}
+
+.bitacora-page .bit-repeat-item:hover,
+.bitacora-page .bit-detail-panel:focus-within {
+    border-color: rgba(215, 25, 32, 0.3);
+    box-shadow: 0 12px 24px rgba(31, 41, 55, 0.1);
+    transform: translateY(-2px);
+}
+
+.bitacora-page .bit-section-chip,
+.bitacora-page .bit-btn-primary,
+.bitacora-page .bit-btn-secondary,
+.bitacora-page .bit-btn-ghost,
+.bitacora-page .bit-btn-pdf,
+.bitacora-page .bit-logout,
+.bitacora-page .bit-draft-conflict-actions button {
+    will-change: transform;
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.22s ease,
+        border-color 0.22s ease,
+        background-color 0.22s ease,
+        color 0.22s ease,
+        filter 0.22s ease;
+}
+
+.bitacora-page .bit-section-chip:hover,
+.bitacora-page .bit-section-chip:focus-visible {
+    transform: translateY(-2px);
+}
+
+.bitacora-page .bit-input,
+.bitacora-page .select2-container--default .select2-selection--multiple,
+.bitacora-page .select2-container--default .select2-selection--single {
+    transition: border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.bitacora-page .bit-progress-fill {
+    transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+}
+
+@keyframes bit-item-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
 }

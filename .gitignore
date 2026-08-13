@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 !.env.production.example
+!.env.dev-real.example
 
 storage/*
 !storage/.gitkeep
@@ -16,7 +17,12 @@ public/**/error_log
 *.bak
 *.old
 *.tmp
+backup_*.sql
+backup_*.sql.gz
+backup_*.tar.gz
 *Zone.Identifier*
 
 public/scripts/vendor/
 public/scripts/composer.phar
+vendor/
+composer.phar

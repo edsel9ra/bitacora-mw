@@ -103,6 +103,55 @@ body {
     margin-bottom: 8px;
 }
 
+/* Mensaje de error inline */
+.login-error {
+    background: #fdecea;
+    border: 1px solid #f5c2c7;
+    color: #b02a37;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 18px;
+}
+
+.login-error[hidden] {
+    display: none;
+}
+
+/* Contenedor de contraseña con botón de visibilidad */
+.password-wrap {
+    position: relative;
+}
+
+.password-wrap .custom-input {
+    padding-right: 46px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: #6c757d;
+    padding: 6px;
+    line-height: 0;
+    cursor: pointer;
+    border-radius: 8px;
+    z-index: 5;
+    transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+    color: #d71920;
+}
+
+.password-toggle.is-active {
+    color: #d71920;
+}
+
 /* Inputs */
 .custom-input {
     height: 48px;

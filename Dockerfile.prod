@@ -1,15 +1,16 @@
-FROM php:8.4-fpm
-
-ENV COMPOSER_ALLOW_SUPERUSER=1
+FROM php:8.4-fpm AS php-base
 
 RUN apt-get update && apt-get install -y \
+    --no-install-recommends \
     git \
     unzip \
     libzip-dev \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
+    libicu-dev \
     libonig-dev \
+    libbz2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo \
@@ -18,19 +19,34 @@ RUN apt-get update && apt-get install -y \
         mbstring \
         zip \
         gd \
+        intl \
+        bcmath \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /var/www/html
+
+FROM php-base AS vendor
+
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY composer.json composer.lock /var/www/html/
+
+RUN composer validate --strict \
+    && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts \
+    && composer audit --locked
+
+FROM php-base
 
 WORKDIR /var/www/html
 
 COPY . /var/www/html
+COPY --from=vendor /var/www/html/vendor /var/www/html/vendor
 COPY docker/php/php.prod.ini /usr/local/etc/php/conf.d/custom.ini
 
-RUN cd public/scripts \
-    && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader \
-    && mkdir -p \
+RUN mkdir -p \
         public/uploads/preventivos \
         public/uploads/correctivos \
         public/uploads/locativos/preventivos \

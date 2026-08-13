@@ -1,0 +1,13 @@
+{
+    "name": "misterwings/bitacora-mw",
+    "description": "Dependencias PHP para la bitacora Mister Wings.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.4",
+        "ext-mbstring": "*",
+        "ext-pdo": "*",
+        "mpdf/mpdf": "^8.3",
+        "phpmailer/phpmailer": "^6.9"
+    }
+}

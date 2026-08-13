@@ -22,8 +22,19 @@ nano .env
 ```
 
 4. Cambia todas las credenciales `change_this_*`.
-5. Deja `APP_ENV_FILE=.env` salvo que uses otro nombre para el archivo de variables.
-6. Si el sitio estará detrás de HTTPS, deja `SESSION_SECURE=true`. Si estás probando temporalmente solo por HTTP, usa `SESSION_SECURE=false` hasta activar HTTPS.
+5. Genera `BITACORA_DRAFT_KEY_BASE64` con `openssl rand -base64 32`, guárdala como secreto y no la cambies mientras existan borradores que deban recuperarse.
+6. Si usas un nombre distinto de `.env`, agrega `--env-file ruta/al/archivo` a cada comando Compose.
+7. Si el sitio estará detrás de HTTPS, deja `SESSION_SECURE=true`. Si estás probando temporalmente solo por HTTP, usa `SESSION_SECURE=false` hasta activar HTTPS.
+
+## Configuración En Coolify
+
+1. Crea un recurso de tipo Docker Compose.
+2. Selecciona `docker-compose.prod.yml` como archivo Compose; no uses el `docker-compose.yml` de desarrollo.
+3. Configura el dominio/proxy para el servicio `nginx` en el puerto interno `80`.
+4. Registra en Coolify las variables de `.env.production.example` como variables de entorno o secretos. No subas el archivo `.env` real.
+5. Genera `BITACORA_DRAFT_KEY_BASE64` con `openssl rand -base64 32` y conserva esa clave en Coolify para futuras actualizaciones.
+
+El Compose de producción no publica puertos al host: Coolify debe enrutar internamente al servicio `nginx`. `app` solo expone PHP-FPM en `9000` y no es un destino HTTP válido.
 
 ## Construcción Y Arranque
 
@@ -31,27 +42,32 @@ nano .env
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-La imagen de producción instala dependencias Composer durante el build desde `public/scripts/composer.lock`. El servidor necesita salida a internet para descargar dependencias la primera vez. El primer build puede tardar varios minutos porque compila extensiones PHP como `gd`.
+La imagen de producción valida el proyecto, instala dependencias Composer y ejecuta `composer audit --locked` durante el build desde `composer.lock` en la raíz. Composer no se instala en la imagen runtime. El servidor necesita salida a internet para descargar dependencias la primera vez. El primer build puede tardar varios minutos porque compila extensiones PHP como `gd`.
 
 ## Migraciones De Base De Datos
 
-Ejecuta las migraciones manuales después del primer arranque:
+El servicio `app` ejecuta el migrador antes de iniciar PHP-FPM. Para verificarlo o ejecutarlo manualmente:
 
 ```bash
-docker compose -f docker-compose.prod.yml exec -T db sh -lc 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' < database/migrations/001_unified_bitacora.sql
-docker compose -f docker-compose.prod.yml exec -T db sh -lc 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' < database/migrations/002_seed_bitacora_config_json.sql
+docker compose -f docker-compose.prod.yml exec app php database/migrate.php
 ```
 
-Si ya tienes una base de datos existente, realiza backup antes de aplicar migraciones.
+El migrador obtiene un bloqueo de MySQL, crea `schema_migrations` y aplica en orden todos los archivos de `database/migrations/`, actualmente `000` a `018`. Antes de desplegar una versión con migraciones nuevas sobre una base existente, realiza backup.
+
+Una base vacía queda con empresas y sedes, pero sin credenciales predeterminadas. Crea el primer administrador usando variables de entorno y `scripts/create_admin.php`, tal como se documenta en `README.md`.
 
 ## Verificación
 
 ```bash
 docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml exec nginx nginx -t
-docker compose -f docker-compose.prod.yml exec app sh -lc "find public -path 'public/scripts/vendor' -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l"
-docker compose -f docker-compose.prod.yml exec app sh -lc "cd public/scripts && composer validate --strict && composer audit"
+docker compose -f docker-compose.prod.yml exec app sh -lc "find public database scripts tests -name '*.php' -print0 | xargs -0 -n1 php -l"
+docker compose -f docker-compose.prod.yml exec app php tests/run.php
+docker compose -f docker-compose.prod.yml exec app php tests/section_mail_privacy_test.php
+docker compose -f docker-compose.prod.yml exec app php tests/integration.php
 ```
+
+La validación y auditoría de Composer se ejecutan automáticamente durante el build de `Dockerfile.prod`; un build exitoso confirma ambas comprobaciones.
 
 Luego abre el dominio configurado en tu proxy/plataforma.
 
@@ -73,13 +89,15 @@ El endpoint de salud HTTP es:
 
 Debe responder `ok` desde el servicio `nginx`.
 
-El endpoint para validar que `nginx` también llega a PHP-FPM es:
+El endpoint de readiness es:
 
 ```text
-/php-healthz.php
+/readyz
 ```
 
-También debe responder `ok`.
+También debe responder `ok`. Valida MySQL, todas las migraciones, escritura real en almacenamiento, el keyring y una muestra cifrada por cada versión usada. `/php-healthz.php` se conserva como alias compatible.
+
+Las vistas activas bloquean scripts inline. La CSP admite estilos inline solo para el funcionamiento de SweetAlert2, Select2 y las mutaciones visuales de jQuery. Si agregas comportamiento frontend, mantén JavaScript y CSS propios bajo `public/resources/`.
 
 ## Diagnóstico De 504 En Coolify
 
@@ -88,7 +106,7 @@ Si el despliegue termina pero el navegador muestra `504 Gateway Timeout`, revisa
 - El dominio debe estar asignado al servicio `nginx`, no a `app`.
 - El puerto interno debe ser `80`, no `9000`.
 - El endpoint `/healthz` debe responder `ok`.
-- El endpoint `/php-healthz.php` debe responder `ok`.
+- El endpoint `/readyz` debe responder `ok`.
 
 Comandos útiles desde el servidor o consola de Coolify:
 
@@ -141,6 +159,8 @@ Cuando HTTPS esté activo:
 
 ```env
 SESSION_SECURE=true
+SESSION_IDLE_TIMEOUT_SECONDS=3600
+SESSION_MAX_LIFETIME_SECONDS=43200
 ```
 
 Después reinicia:
@@ -159,12 +179,68 @@ Producción usa estos volúmenes Docker:
 
 No borres estos volúmenes salvo que tengas backup.
 
+## Correos Asíncronos
+
+Producción usa por defecto el envío asíncrono:
+
+```env
+BITACORA_MAIL_ASYNC=true
+```
+
+El servicio `worker` incluido en Compose procesa la cola continuamente. Para ajustar cada lote:
+
+```env
+BITACORA_MAIL_WORKER_LIMIT=20
+```
+
+Para una ejecución manual de diagnóstico:
+
+```bash
+docker compose -f docker-compose.prod.yml exec worker php scripts/process_bitacora_email_queue.php
+```
+
+El worker lee `bitacora_email_queue`, usa la configuración SMTP centralizada y actualiza `bitacora_envios` cuando el correo principal o por sección se envía o falla definitivamente. Su healthcheck exige un ciclo reciente de acceso a la cola.
+
+## Borradores Persistentes
+
+Los borradores se cifran en MySQL, tienen una retención predeterminada de 30 días y se aíslan por usuario, empresa y tipo de formulario. Incluye todas las claves vigentes en el procedimiento de recuperación de secretos: restaurar la base sin ellas deja los borradores cifrados irrecuperables.
+
+Rotación compatible:
+
+1. Conserva la clave actual como versión `1` en `BITACORA_DRAFT_KEYRING_JSON`.
+2. Agrega una nueva clave, por ejemplo versión `2`, y cambia `BITACORA_DRAFT_ACTIVE_KEY_VERSION=2`.
+3. Reconstruye `app` y confirma que `/readyz` responde `ok`.
+4. Ejecuta `docker compose -f docker-compose.prod.yml exec app php database/rotate_bitacora_draft_keys.php`.
+5. Confirma con `scripts/bitacora_status.php` que no quedan borradores en la versión anterior antes de retirar esa clave.
+
+Ejemplo conceptual, usando secretos reales distintos:
+
+```env
+BITACORA_DRAFT_KEY_BASE64=<clave-v1>
+BITACORA_DRAFT_KEYRING_JSON={"1":"<clave-v1>","2":"<clave-v2>"}
+BITACORA_DRAFT_ACTIVE_KEY_VERSION=2
+```
+
+El servicio `maintenance` elimina cada hora PDFs y borradores expirados. Para ejecutar únicamente la limpieza de borradores:
+
+```bash
+docker compose -f docker-compose.prod.yml exec app php database/cleanup_bitacora_drafts.php
+```
+
+`worker` y `maintenance` publican healthchecks basados en heartbeats. Consulta colas, borradores por versión de clave, bloqueos y reservas incompletas con:
+
+```bash
+docker compose -f docker-compose.prod.yml exec app php scripts/bitacora_status.php
+```
+
+Una reserva con `delivery_unknown` significa que SMTP pudo aceptar el correo antes de una interrupción. Debe verificarse en historial/proveedor antes de repetirla; esta ambigüedad no puede eliminarse transaccionalmente con SMTP convencional.
+
 ## Backup
 
 Base de datos:
 
 ```bash
-docker compose -f docker-compose.prod.yml exec -T db sh -lc 'mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' > backup_bitacora.sql
+docker compose -f docker-compose.prod.yml exec -T db sh -lc 'mysqldump --single-transaction --quick --routines --events -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' > backup_bitacora.sql
 ```
 
 Volúmenes de archivos:
@@ -182,24 +258,47 @@ docker volume ls | grep bitacora
 
 ## Actualización De Código
 
-1. Sube los cambios al servidor.
-2. Reconstruye imágenes:
+1. Realiza backup de la base de datos y de los volúmenes persistentes.
+2. Sube los cambios al servidor.
+3. Reconstruye imágenes y aplica automáticamente las migraciones antes de iniciar `app`:
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-3. Aplica nuevas migraciones si existen.
-4. Revisa logs:
+4. Confirma que `app` haya quedado saludable. Si el arranque falla por una migración, no repitas el despliegue sin revisar los logs y restaurar el backup si corresponde.
+5. Limpia PDFs expirados si corresponde:
 
 ```bash
-docker compose -f docker-compose.prod.yml logs -f app nginx
+docker compose -f docker-compose.prod.yml exec app php database/cleanup_bitacora_pdfs.php
+```
+
+La limpieza periódica de PDFs y borradores también queda a cargo del servicio `maintenance`.
+
+6. Si `BITACORA_MAIL_ASYNC=true`, confirma que el worker esté activo:
+
+```bash
+docker compose -f docker-compose.prod.yml ps worker
+```
+
+7. Confirma que el mantenimiento esté activo:
+
+```bash
+docker compose -f docker-compose.prod.yml ps maintenance
+```
+
+8. Revisa logs:
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f app nginx worker maintenance
 ```
 
 ## Seguridad Operativa
 
 - No publiques `db` ni `phpmyadmin` en producción.
-- No subas `.env`, backups SQL, logs, `storage/`, `public/uploads/` ni `public/scripts/vendor/` al repositorio.
+- No subas `.env`, backups SQL, logs, `storage/`, `public/uploads/` ni `vendor/` al repositorio.
+- Mantén legacy fuera de `public/`; las copias de referencia viven en `legacy/public/` y no deben exponerse por Nginx.
 - Mantén `SMTP_VERIFY_TLS=true`.
 - Cambia credenciales por valores únicos y largos.
 - Haz backup antes de actualizar.
+- El límite de cuerpo HTTP en Nginx es `16M`; súbelo solo si agregas cargas de archivos reales.

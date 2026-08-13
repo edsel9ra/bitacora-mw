@@ -5,21 +5,139 @@ services:
       dockerfile: Dockerfile.prod
     image: bitacora-mw-app:prod
     restart: unless-stopped
-    env_file:
-      - ${APP_ENV_FILE:-.env}
+    mem_limit: 1g
+    cpus: 0.5
     environment:
+      APP_ENV: ${APP_ENV:-production}
       MYSQL_HOST: db
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
       BITACORA_STORAGE_PATH: /var/www/html/storage/bitacoras_pdf
+      BITACORA_PDF_TTL_DAYS: ${BITACORA_PDF_TTL_DAYS:-90}
+      BITACORA_DRAFT_TTL_DAYS: ${BITACORA_DRAFT_TTL_DAYS:-30}
+      BITACORA_DRAFT_MAX_BYTES: ${BITACORA_DRAFT_MAX_BYTES:-262144}
+      BITACORA_DRAFT_KEY_BASE64: ${BITACORA_DRAFT_KEY_BASE64:?BITACORA_DRAFT_KEY_BASE64 is required}
+      BITACORA_DRAFT_KEYRING_JSON: ${BITACORA_DRAFT_KEYRING_JSON:-}
+      BITACORA_DRAFT_ACTIVE_KEY_VERSION: ${BITACORA_DRAFT_ACTIVE_KEY_VERSION:-1}
+      BITACORA_MAIL_ASYNC: ${BITACORA_MAIL_ASYNC:-true}
+      BITACORA_SUBMISSION_CLAIM_TTL_SECONDS: ${BITACORA_SUBMISSION_CLAIM_TTL_SECONDS:-300}
+      BITACORA_MAIL_WORKER_LIMIT: ${BITACORA_MAIL_WORKER_LIMIT:-20}
+      APP_ENABLE_LEGACY_BITACORA: ${APP_ENABLE_LEGACY_BITACORA:-false}
       SESSION_SECURE: ${SESSION_SECURE:-true}
       SESSION_SAMESITE: ${SESSION_SAMESITE:-Lax}
+      SESSION_IDLE_TIMEOUT_SECONDS: ${SESSION_IDLE_TIMEOUT_SECONDS:-3600}
+      SESSION_MAX_LIFETIME_SECONDS: ${SESSION_MAX_LIFETIME_SECONDS:-43200}
+      SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-ssl}
+      SMTP_AUTH: ${SMTP_AUTH:-true}
+      SMTP_USER: ${SMTP_USER:?SMTP_USER is required}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?SMTP_PASSWORD is required}
+      SMTP_FROM: ${SMTP_FROM:?SMTP_FROM is required}
       SMTP_VERIFY_TLS: ${SMTP_VERIFY_TLS:-true}
-    command: sh -lc "mkdir -p public/uploads/preventivos public/uploads/correctivos public/uploads/locativos/preventivos public/uploads/locativos/correctivos storage/bitacoras_pdf storage/logs && chown -R www-data:www-data public/uploads storage && chmod -R ug+rwX public/uploads storage && exec php-fpm"
+      SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-20}
+      SMTP_HELO_NAME: ${SMTP_HELO_NAME:-}
+    command: sh -lc "php -r 'require_once \"public/config/bitacora_drafts.php\"; bit_draft_active_key_version();' && php database/migrate.php && mkdir -p public/uploads/preventivos public/uploads/correctivos public/uploads/locativos/preventivos public/uploads/locativos/correctivos storage/bitacoras_pdf storage/logs && chown -R www-data:www-data public/uploads storage && chmod -R ug+rwX public/uploads storage && exec php-fpm"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
     volumes:
       - bitacora_storage:/var/www/html/storage
       - bitacora_uploads:/var/www/html/public/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\",9000,$$errno,$$errstr,2) ? 0 : 1);' && php public/php-healthz.php | grep -qx ok"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
+
+  worker:
+    image: bitacora-mw-app:prod
+    restart: unless-stopped
+    user: www-data
+    mem_limit: 512m
+    cpus: 0.25
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      MYSQL_HOST: db
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      BITACORA_STORAGE_PATH: /var/www/html/storage/bitacoras_pdf
+      BITACORA_MAIL_WORKER_LIMIT: ${BITACORA_MAIL_WORKER_LIMIT:-20}
+      BITACORA_MAIL_WORKER_INTERVAL_SECONDS: ${BITACORA_MAIL_WORKER_INTERVAL_SECONDS:-15}
+      BITACORA_MAIL_WORKER_HEALTH_MAX_AGE_SECONDS: ${BITACORA_MAIL_WORKER_HEALTH_MAX_AGE_SECONDS:-900}
+      SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-ssl}
+      SMTP_AUTH: ${SMTP_AUTH:-true}
+      SMTP_USER: ${SMTP_USER:?SMTP_USER is required}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?SMTP_PASSWORD is required}
+      SMTP_FROM: ${SMTP_FROM:?SMTP_FROM is required}
+      SMTP_VERIFY_TLS: ${SMTP_VERIFY_TLS:-true}
+      SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-20}
+      SMTP_HELO_NAME: ${SMTP_HELO_NAME:-}
+    command: sh scripts/worker_loop.sh
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    volumes:
+      - bitacora_storage:/var/www/html/storage
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/worker-last-success && now=$$(date +%s) && last=$$(cat /tmp/worker-last-success) && test $$((now-last)) -le $${BITACORA_MAIL_WORKER_HEALTH_MAX_AGE_SECONDS:-900}"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      app:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
+  maintenance:
+    image: bitacora-mw-app:prod
+    restart: unless-stopped
+    user: www-data
+    mem_limit: 256m
+    cpus: 0.15
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      MYSQL_HOST: db
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      BITACORA_STORAGE_PATH: /var/www/html/storage/bitacoras_pdf
+      BITACORA_PDF_TTL_DAYS: ${BITACORA_PDF_TTL_DAYS:-90}
+      BITACORA_DRAFT_TTL_DAYS: ${BITACORA_DRAFT_TTL_DAYS:-30}
+      BITACORA_MAINTENANCE_INTERVAL_SECONDS: ${BITACORA_MAINTENANCE_INTERVAL_SECONDS:-3600}
+      BITACORA_MAINTENANCE_BATCH_SIZE: ${BITACORA_MAINTENANCE_BATCH_SIZE:-500}
+      BITACORA_MAINTENANCE_MAX_BATCHES: ${BITACORA_MAINTENANCE_MAX_BATCHES:-20}
+      BITACORA_MAINTENANCE_HEALTH_MAX_AGE_SECONDS: ${BITACORA_MAINTENANCE_HEALTH_MAX_AGE_SECONDS:-7500}
+    command: sh scripts/maintenance_loop.sh
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    volumes:
+      - bitacora_storage:/var/www/html/storage
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/maintenance-last-success && now=$$(date +%s) && last=$$(cat /tmp/maintenance-last-success) && test $$((now-last)) -le $${BITACORA_MAINTENANCE_HEALTH_MAX_AGE_SECONDS:-7500}"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      app:
+        condition: service_healthy
+      db:
+        condition: service_healthy
 
   nginx:
     build:
@@ -27,14 +145,22 @@ services:
       dockerfile: docker/nginx/Dockerfile.prod
     image: bitacora-mw-nginx:prod
     restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.25
     expose:
       - "80"
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
     volumes:
       - bitacora_uploads:/var/www/html/public/uploads:ro
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/healthz >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/php-healthz.php >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -43,8 +169,8 @@ services:
   db:
     image: mysql:8.4
     restart: unless-stopped
-    env_file:
-      - ${APP_ENV_FILE:-.env}
+    mem_limit: 1g
+    cpus: 1
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:?bitacora_mw}
       MYSQL_USER: ${MYSQL_USER:?bitacora_user}

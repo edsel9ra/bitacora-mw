@@ -180,6 +180,7 @@ INSERT IGNORE INTO empresa_sedes (idEmpresa, idSede, valor_form, orden) VALUES
   (1, 1, 'CIUDAD JARDÍN', 20),
   (1, 4, 'JARDÍN PLAZA', 30),
   (1, 12, 'BOCHALEMA', 40),
+  (1, 9, 'UNICENTRO', 50),
   (2, 7, 'GRANADA', 10),
   (3, 6, 'CHIPICHAPE', 10),
   (3, 8, 'FLORA', 20),
@@ -197,8 +198,8 @@ INSERT IGNORE INTO empresa_sedes (idEmpresa, idSede, valor_form, orden) VALUES
   (6, 8, 'Flora', 90),
   (6, 10, 'Llanogrande', 100),
   (6, 12, 'Bochalema', 110),
-  (7, 9, 'UNICENTRO - TRILOGIA', 10),
   (8, 2, 'PANCE', 10),
   (8, 1, 'CIUDAD JARDÍN', 20),
   (8, 4, 'JARDÍN PLAZA', 30),
-  (8, 12, 'BOCHALEMA', 40);
+  (8, 12, 'BOCHALEMA', 40),
+  (8, 9, 'UNICENTRO', 50);

@@ -13,6 +13,11 @@ public/**/error_log
 *.log
 *.bak
 *.old
+backup_*.sql
+backup_*.sql.gz
+backup_*.tar.gz
 *Zone.Identifier*
 
+vendor/
 public/scripts/vendor/
+legacy/

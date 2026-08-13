@@ -35,7 +35,13 @@ app_start_session();
                 <p>Ingresa tus credenciales para continuar</p>
             </div>
 
+<<<<<<< HEAD
             <form id="formLogin" method="post" autocomplete="off">
+=======
+            <div id="loginError" class="login-error" role="alert" hidden></div>
+
+            <form id="formLogin" method="post" action="bd/login.php">
+>>>>>>> 00e14c1 (Version 2)
                 <?php echo app_csrf_input(); ?>
 
                 <div class="form-group">
@@ -46,24 +52,33 @@ app_start_session();
                         id="usuario" 
                         class="form-control custom-input" 
                         placeholder="Ingresa tu usuario"
-                        autocomplete="off"
+                        autocomplete="username"
                         required
                     >
                 </div>
 
                 <div class="form-group">
                     <label for="password">Contraseña</label>
-                    <input 
-                        type="password" 
-                        name="password" 
-                        id="password" 
-                        class="form-control custom-input" 
-                        placeholder="Ingresa tu contraseña"
-                        required
-                    >
+                    <div class="password-wrap">
+                        <input
+                            type="password"
+                            name="password"
+                            id="password"
+                            class="form-control custom-input"
+                            placeholder="Ingresa tu contraseña"
+                            autocomplete="current-password"
+                            required
+                        >
+                        <button type="button" id="togglePassword" class="password-toggle" aria-label="Mostrar contraseña" aria-pressed="false" title="Mostrar contraseña">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
-                <button type="submit" name="submit" class="btn-login">
+                <button type="submit" name="submit" id="btnLogin" class="btn-login" data-default-text="Ingresar">
                     Ingresar
                 </button>
 
@@ -78,8 +93,6 @@ app_start_session();
 
     <!-- Scripts -->
     <script src="resources/jquery/jquery-3.6.0.min.js"></script>
-    <script src="resources/popper/popper.min.js"></script>
-    <script src="resources/js/bootstrap.min.js"></script>
     <script src="resources/sweetalert/sweetalert2.all.min.js"></script>
     <script src="code.js"></script>
 

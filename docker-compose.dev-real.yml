@@ -1,0 +1,16 @@
+# Opt-in development override for real SMTP delivery.
+# Keep the base compose file as the default Mailpit configuration.
+services:
+  app:
+    environment:
+      SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required for real development mail}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-ssl}
+      SMTP_AUTH: "true"
+      SMTP_USER: ${SMTP_USER:?SMTP_USER is required for real development mail}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?SMTP_PASSWORD is required for real development mail}
+      SMTP_FROM: ${SMTP_FROM:?SMTP_FROM is required for real development mail}
+      SMTP_VERIFY_TLS: "true"
+      SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-20}
+      SMTP_HELO_NAME: ${SMTP_HELO_NAME:-}
+      BITACORA_MAIL_ASYNC: "false"
