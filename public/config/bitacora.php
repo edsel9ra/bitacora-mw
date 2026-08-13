@@ -713,27 +713,6 @@ function app_bitacora_field_available_for_date(array $field, string $date): bool
 
 function app_bitacora_default_form_sections(array $companyConfig, int $empresaId): array
 {
-<<<<<<< HEAD
-    $supervisores = [
-        'Brian Alberto Ortiz' => 'Brian Alberto Ortiz - Coordinador de Operaciones',
-        'Angela Yuliana Mesa' => 'Angela Yuliana Mesa - Entrenadora de Cocina y Bar',
-        ($empresaId === 8 ? 'Maria Conchita Parra' : 'Julia Maria Carabali') => ($empresaId === 8 ? 'Maria Conchita Parra - Entrenadora de Cocina y Bar' : 'Julia Maria Carabali - Entrenadora de Cocina y Bar'),
-        'Nicol Muñoz' => 'Nicol Muñoz - Supervisora de Operaciones',
-        'No hay visita por parte de los supervisores' => 'No aplica visita',
-    ];
-    $sst = [
-        'Pamela Valencia' => 'Pamela Valencia - Coordinadora de SST',
-        'Johanna Findo' => 'Johanna Findo - Auxiliar SST',
-        'No hay visita por parte del área' => 'No aplica visita',
-    ];
-    $bpm = [
-        'Fabián Salazar' => 'Fabián Salazar - Coordinador de Mejoramiento',
-        'Alejandro Noguera' => 'Alejandro Noguera - Supervisor de Calidad y Ambiental',
-        'Juan Diego Franco' => 'Juan Diego Franco - Aprendiz',
-        'No hay visita por parte del área' => 'No aplica visita',
-    ];
-=======
->>>>>>> 00e14c1 (Version 2)
     $afluencia = ['BAJA' => 'AFLUENCIA BAJA', 'MODERADA' => 'AFLUENCIA MODERADA', 'ALTA' => 'AFLUENCIA ALTA'];
     $ghCargos = app_bitacora_gh_cargos($empresaId);
 
