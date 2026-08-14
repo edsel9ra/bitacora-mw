@@ -38,7 +38,7 @@ services:
       SMTP_VERIFY_TLS: ${SMTP_VERIFY_TLS:-true}
       SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-20}
       SMTP_HELO_NAME: ${SMTP_HELO_NAME:-}
-    command: sh -lc "php -r 'require_once \"public/config/bitacora_drafts.php\"; bit_draft_active_key_version();' && php database/migrate.php && mkdir -p public/uploads/preventivos public/uploads/correctivos public/uploads/locativos/preventivos public/uploads/locativos/correctivos storage/bitacoras_pdf storage/logs && chown -R www-data:www-data public/uploads storage && chmod -R ug+rwX public/uploads storage && exec php-fpm"
+    command: sh -lc "php -r 'require_once \"public/config/bitacora_drafts.php\"; bit_draft_active_key_version();' && php database/migrate.php && php scripts/import_bitacora_recipients.php && mkdir -p public/uploads/preventivos public/uploads/correctivos public/uploads/locativos/preventivos public/uploads/locativos/correctivos storage/bitacoras_pdf storage/logs && chown -R www-data:www-data public/uploads storage && chmod -R ug+rwX public/uploads storage && exec php-fpm"
     read_only: true
     tmpfs:
       - /tmp

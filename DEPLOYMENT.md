@@ -52,7 +52,7 @@ El servicio `app` ejecuta el migrador antes de iniciar PHP-FPM. Para verificarlo
 docker compose -f docker-compose.prod.yml exec app php database/migrate.php
 ```
 
-El migrador obtiene un bloqueo de MySQL, crea `schema_migrations` y aplica en orden todos los archivos de `database/migrations/`, actualmente `000` a `018`. Antes de desplegar una versión con migraciones nuevas sobre una base existente, realiza backup.
+El migrador obtiene un bloqueo de MySQL, crea `schema_migrations` y aplica en orden todos los archivos de `database/migrations/`, actualmente `000` a `019`. Al iniciar `app`, el importador idempotente `scripts/import_bitacora_recipients.php` traslada la configuración PHP actual a la base de datos y activa el modo administrado por BD una sola vez por empresa. Antes de desplegar una versión con migraciones nuevas sobre una base existente, realiza backup.
 
 Una base vacía queda con empresas y sedes, pero sin credenciales predeterminadas. Crea el primer administrador usando variables de entorno y `scripts/create_admin.php`, tal como se documenta en `README.md`.
 
@@ -65,6 +65,7 @@ docker compose -f docker-compose.prod.yml exec app sh -lc "find public database 
 docker compose -f docker-compose.prod.yml exec app php tests/run.php
 docker compose -f docker-compose.prod.yml exec app php tests/section_mail_privacy_test.php
 docker compose -f docker-compose.prod.yml exec app php tests/integration.php
+docker compose -f docker-compose.prod.yml exec app php tests/recipient_admin_integration.php
 ```
 
 La validación y auditoría de Composer se ejecutan automáticamente durante el build de `Dockerfile.prod`; un build exitoso confirma ambas comprobaciones.

@@ -334,6 +334,10 @@ function bit_admin_field_from_post(array $companyConfig): array
         $min = trim((string) ($_POST['min'] ?? ''));
         $max = trim((string) ($_POST['max'] ?? ''));
         $step = trim((string) ($_POST['step'] ?? ''));
+        $numberFormat = trim((string) ($_POST['number_format'] ?? 'plain'));
+        $numberDecimals = trim((string) ($_POST['number_decimals'] ?? ''));
+        $suffixSingular = trim((string) ($_POST['suffix_singular'] ?? ''));
+        $suffixPlural = trim((string) ($_POST['suffix_plural'] ?? ''));
         if ($min !== '' && is_numeric(str_replace(',', '.', $min))) {
             $field['min'] = str_replace(',', '.', $min);
         }
@@ -342,6 +346,16 @@ function bit_admin_field_from_post(array $companyConfig): array
         }
         if ($step !== '') {
             $field['step'] = $step;
+        }
+        $field['number_format'] = in_array($numberFormat, ['plain', 'currency'], true) ? $numberFormat : 'plain';
+        if (preg_match('/^\d+$/', $numberDecimals) === 1) {
+            $field['number_decimals'] = max(0, min(6, (int) $numberDecimals));
+        }
+        if ($suffixSingular !== '') {
+            $field['suffix_singular'] = $suffixSingular;
+        }
+        if ($suffixPlural !== '') {
+            $field['suffix_plural'] = $suffixPlural;
         }
     }
 
@@ -367,10 +381,28 @@ function bit_admin_field_from_post(array $companyConfig): array
     }
 
     if (in_array($type, ['yes_no_quantity_group', 'quantity_group'], true)) {
+        $quantitySuffix = trim((string) ($_POST['quantity_suffix'] ?? ''));
+        $quantitySuffixSingular = trim((string) ($_POST['quantity_suffix_singular'] ?? ''));
+        $quantitySuffixPlural = trim((string) ($_POST['quantity_suffix_plural'] ?? ''));
+        if ($quantitySuffix !== '') {
+            $field['suffix'] = $quantitySuffix;
+        }
+        if ($quantitySuffixSingular !== '') {
+            $field['suffix_singular'] = $quantitySuffixSingular;
+        }
+        if ($quantitySuffixPlural !== '') {
+            $field['suffix_plural'] = $quantitySuffixPlural;
+        }
+
         $itemNames = (array) ($_POST['group_fields']['name'] ?? []);
         $itemLabels = (array) ($_POST['group_fields']['label'] ?? []);
         $itemTypes = (array) ($_POST['group_fields']['type'] ?? []);
         $itemOptions = (array) ($_POST['group_fields']['options'] ?? []);
+        $itemSuffixes = (array) ($_POST['group_fields']['suffix'] ?? []);
+        $itemSuffixSingulars = (array) ($_POST['group_fields']['suffix_singular'] ?? []);
+        $itemSuffixPlurals = (array) ($_POST['group_fields']['suffix_plural'] ?? []);
+        $itemNumberFormats = (array) ($_POST['group_fields']['number_format'] ?? []);
+        $itemNumberDecimals = (array) ($_POST['group_fields']['number_decimals'] ?? []);
         $rowKeys = (array) ($_POST['group_fields']['row_key'] ?? []);
         $requiredValues = array_flip(array_map('strval', (array) ($_POST['group_fields']['required'] ?? [])));
         $allowedItemTypes = ['text', 'textarea', 'number', 'select', 'date', 'time', 'simple_radio'];
@@ -405,6 +437,26 @@ function bit_admin_field_from_post(array $companyConfig): array
                     return [null, 'Cada sub-campo tipo lista del grupo debe tener al menos una opción.'];
                 }
                 $itemField['options'] = $itemOptionsList;
+            }
+            if ($itemType === 'number') {
+                $itemSuffix = trim((string) ($itemSuffixes[$index] ?? ''));
+                $itemSuffixSingular = trim((string) ($itemSuffixSingulars[$index] ?? ''));
+                $itemSuffixPlural = trim((string) ($itemSuffixPlurals[$index] ?? ''));
+                $itemNumberFormat = trim((string) ($itemNumberFormats[$index] ?? 'plain'));
+                $itemDecimals = trim((string) ($itemNumberDecimals[$index] ?? ''));
+                if ($itemSuffix !== '') {
+                    $itemField['suffix'] = $itemSuffix;
+                }
+                if ($itemSuffixSingular !== '') {
+                    $itemField['suffix_singular'] = $itemSuffixSingular;
+                }
+                if ($itemSuffixPlural !== '') {
+                    $itemField['suffix_plural'] = $itemSuffixPlural;
+                }
+                $itemField['number_format'] = in_array($itemNumberFormat, ['plain', 'currency'], true) ? $itemNumberFormat : 'plain';
+                if (preg_match('/^\d+$/', $itemDecimals) === 1) {
+                    $itemField['number_decimals'] = max(0, min(6, (int) $itemDecimals));
+                }
             }
             $fields[] = $itemField;
         }
@@ -496,6 +548,10 @@ function bit_admin_base_override_from_post(array $baseField, array $companyConfi
         $max = trim((string) ($_POST['max'] ?? ''));
         $step = trim((string) ($_POST['step'] ?? ''));
         $suffix = trim((string) ($_POST['suffix'] ?? ''));
+        $numberFormat = trim((string) ($_POST['number_format'] ?? 'plain'));
+        $numberDecimals = trim((string) ($_POST['number_decimals'] ?? ''));
+        $suffixSingular = trim((string) ($_POST['suffix_singular'] ?? ''));
+        $suffixPlural = trim((string) ($_POST['suffix_plural'] ?? ''));
         if ($min !== '' && is_numeric(str_replace(',', '.', $min))) {
             $override['min'] = str_replace(',', '.', $min);
         }
@@ -506,6 +562,16 @@ function bit_admin_base_override_from_post(array $baseField, array $companyConfi
             $override['step'] = $step;
         }
         $override['suffix'] = $suffix;
+        $override['number_format'] = in_array($numberFormat, ['plain', 'currency'], true) ? $numberFormat : 'plain';
+        if (preg_match('/^\d+$/', $numberDecimals) === 1) {
+            $override['number_decimals'] = max(0, min(6, (int) $numberDecimals));
+        }
+        if ($suffixSingular !== '') {
+            $override['suffix_singular'] = $suffixSingular;
+        }
+        if ($suffixPlural !== '') {
+            $override['suffix_plural'] = $suffixPlural;
+        }
     }
 
     if ($type === 'yes_no') {
@@ -520,6 +586,11 @@ function bit_admin_base_override_from_post(array $baseField, array $companyConfi
     if ($type === 'quantity_group') {
         $override['zero_report_value'] = trim((string) ($_POST['zero_report_value'] ?? ($baseField['zero_report_value'] ?? 'Sin registros'))) ?: 'Sin registros';
         $override['required'] = true;
+    }
+    if (in_array($type, ['yes_no_quantity_group', 'quantity_group'], true)) {
+        $override['suffix'] = trim((string) ($_POST['quantity_suffix'] ?? ($baseField['suffix'] ?? '')));
+        $override['suffix_singular'] = trim((string) ($_POST['quantity_suffix_singular'] ?? ($baseField['suffix_singular'] ?? '')));
+        $override['suffix_plural'] = trim((string) ($_POST['quantity_suffix_plural'] ?? ($baseField['suffix_plural'] ?? '')));
     }
 
     $normalized = app_bitacora_normalize_field_override($override, $baseField);

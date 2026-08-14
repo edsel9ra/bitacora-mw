@@ -306,6 +306,10 @@ $fieldDefaults = [
     'max' => '',
     'step' => 'any',
     'suffix' => '',
+    'suffix_singular' => '',
+    'suffix_plural' => '',
+    'number_format' => 'plain',
+    'number_decimals' => '0',
     'detail_name' => '',
     'detail_label' => 'Detalle',
     'detail_type' => 'textarea',
@@ -315,6 +319,7 @@ $fieldDefaults = [
     'description' => '',
     'quantity_name' => '',
     'quantity_label' => 'Cantidad',
+    'quantity_suffix' => '',
     'item_label' => 'Registro',
     'no_report_value' => 'Sin novedad',
     'zero_report_value' => 'Sin registros',
@@ -448,6 +453,29 @@ if (($_GET['ajax'] ?? '') === '1') {
                         <input id="base_suffix" name="suffix" class="form-control" value="<?php echo app_h((string) ($baseFieldForm['suffix'] ?? '')); ?>">
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="base_number_format">Formato de presentación</label>
+                        <select id="base_number_format" name="number_format" class="form-control">
+                            <option value="plain" <?php echo (string) ($baseFieldForm['number_format'] ?? 'plain') === 'plain' ? 'selected' : ''; ?>>Número normal</option>
+                            <option value="currency" <?php echo (string) ($baseFieldForm['number_format'] ?? 'plain') === 'currency' ? 'selected' : ''; ?>>Moneda colombiana ($)</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="base_number_decimals">Decimales</label>
+                        <input id="base_number_decimals" name="number_decimals" type="number" min="0" max="6" class="form-control" value="<?php echo app_h((string) ($baseFieldForm['number_decimals'] ?? '0')); ?>">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="base_suffix_singular">Sufijo cuando el valor es 1</label>
+                        <input id="base_suffix_singular" name="suffix_singular" maxlength="100" class="form-control" value="<?php echo app_h((string) ($baseFieldForm['suffix_singular'] ?? '')); ?>" placeholder="unidad">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="base_suffix_plural">Sufijo para otros valores</label>
+                        <input id="base_suffix_plural" name="suffix_plural" maxlength="100" class="form-control" value="<?php echo app_h((string) ($baseFieldForm['suffix_plural'] ?? '')); ?>" placeholder="unidades">
+                    </div>
+                </div>
             <?php endif; ?>
 
             <?php if ((string) ($baseFieldForm['type'] ?? '') === 'yes_no'): ?>
@@ -478,6 +506,23 @@ if (($_GET['ajax'] ?? '') === '1') {
                 <div class="form-group">
                     <label for="base_zero_report_value">Texto en PDF/correo cuando la cantidad es 0</label>
                     <input id="base_zero_report_value" name="zero_report_value" class="form-control" maxlength="500" value="<?php echo app_h((string) ($baseFieldForm['zero_report_value'] ?? 'Sin registros')); ?>">
+                </div>
+            <?php endif; ?>
+
+            <?php if (in_array((string) ($baseFieldForm['type'] ?? ''), ['yes_no_quantity_group', 'quantity_group'], true)): ?>
+                <div class="form-group">
+                    <label for="base_quantity_suffix">Sufijo de la cantidad en PDF/correo</label>
+                    <input id="base_quantity_suffix" name="quantity_suffix" class="form-control" maxlength="100" value="<?php echo app_h((string) ($baseFieldForm['suffix'] ?? '')); ?>" placeholder="unidades">
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="base_quantity_suffix_singular">Sufijo cuando la cantidad es 1</label>
+                        <input id="base_quantity_suffix_singular" name="quantity_suffix_singular" maxlength="100" class="form-control" value="<?php echo app_h((string) ($baseFieldForm['suffix_singular'] ?? '')); ?>" placeholder="unidad">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="base_quantity_suffix_plural">Sufijo para otras cantidades</label>
+                        <input id="base_quantity_suffix_plural" name="quantity_suffix_plural" maxlength="100" class="form-control" value="<?php echo app_h((string) ($baseFieldForm['suffix_plural'] ?? '')); ?>" placeholder="unidades">
+                    </div>
                 </div>
             <?php endif; ?>
 
@@ -583,9 +628,32 @@ if (($_GET['ajax'] ?? '') === '1') {
                     <input id="step" name="step" class="form-control" value="<?php echo app_h((string) ($fieldForm['step'] ?? 'any')); ?>">
                 </div>
             </div>
-            <div class="form-group">
-                <label for="suffix">Sufijo en PDF/correo</label>
-                <input id="suffix" name="suffix" class="form-control" value="<?php echo app_h((string) ($fieldForm['suffix'] ?? '')); ?>" placeholder="%, bolsas, unidades">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="suffix">Sufijo en PDF/correo</label>
+                    <input id="suffix" name="suffix" class="form-control" value="<?php echo app_h((string) ($fieldForm['suffix'] ?? '')); ?>" placeholder="%, bolsas, unidades">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="number_format">Formato</label>
+                    <select id="number_format" name="number_format" class="form-control">
+                        <option value="plain" <?php echo (string) ($fieldForm['number_format'] ?? 'plain') === 'plain' ? 'selected' : ''; ?>>Número normal</option>
+                        <option value="currency" <?php echo (string) ($fieldForm['number_format'] ?? 'plain') === 'currency' ? 'selected' : ''; ?>>Moneda ($)</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="number_decimals">Decimales</label>
+                    <input id="number_decimals" name="number_decimals" type="number" min="0" max="6" class="form-control" value="<?php echo app_h((string) ($fieldForm['number_decimals'] ?? '0')); ?>">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="suffix_singular">Sufijo cuando el valor es 1</label>
+                    <input id="suffix_singular" name="suffix_singular" maxlength="100" class="form-control" value="<?php echo app_h((string) ($fieldForm['suffix_singular'] ?? '')); ?>" placeholder="unidad">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="suffix_plural">Sufijo para otros valores</label>
+                    <input id="suffix_plural" name="suffix_plural" maxlength="100" class="form-control" value="<?php echo app_h((string) ($fieldForm['suffix_plural'] ?? '')); ?>" placeholder="unidades">
+                </div>
             </div>
         </div>
 
@@ -668,6 +736,20 @@ if (($_GET['ajax'] ?? '') === '1') {
                     <input id="item_label" name="item_label" class="form-control" value="<?php echo app_h((string) ($fieldForm['item_label'] ?? 'Registro')); ?>">
                 </div>
             </div>
+            <div class="form-group">
+                <label for="quantity_suffix">Sufijo de la cantidad en PDF/correo</label>
+                <input id="quantity_suffix" name="quantity_suffix" maxlength="100" class="form-control" value="<?php echo app_h((string) ($fieldForm['suffix'] ?? '')); ?>" placeholder="unidades">
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="quantity_suffix_singular">Sufijo cuando la cantidad es 1</label>
+                    <input id="quantity_suffix_singular" name="quantity_suffix_singular" maxlength="100" class="form-control" value="<?php echo app_h((string) ($fieldForm['suffix_singular'] ?? '')); ?>" placeholder="unidad">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="quantity_suffix_plural">Sufijo para otras cantidades</label>
+                    <input id="quantity_suffix_plural" name="quantity_suffix_plural" maxlength="100" class="form-control" value="<?php echo app_h((string) ($fieldForm['suffix_plural'] ?? '')); ?>" placeholder="unidades">
+                </div>
+            </div>
             <div class="admin-group-fields-editor">
                 <label>Sub-campos de cada registro</label>
                 <div id="adminGroupFieldsList">
@@ -704,6 +786,33 @@ if (($_GET['ajax'] ?? '') === '1') {
                                 <div class="form-group mb-0 admin-group-field-options-wrap" data-options-for="select" <?php echo (string) ($itemField['type'] ?? 'text') === 'select' ? '' : 'hidden'; ?>>
                                     <label>Opciones de la lista (una por línea)</label>
                                     <textarea class="form-control" name="group_fields[options][]" rows="2"><?php echo app_h(implode("\n", (array) ($itemField['options'] ?? []))); ?></textarea>
+                                </div>
+                                <div class="form-row admin-group-field-number-options-wrap" <?php echo (string) ($itemField['type'] ?? 'text') === 'number' ? '' : 'hidden'; ?>>
+                                    <div class="form-group col-md-6 mb-0">
+                                        <label>Formato de presentación</label>
+                                        <select class="form-control" name="group_fields[number_format][]">
+                                            <option value="plain" <?php echo (string) ($itemField['number_format'] ?? 'plain') === 'plain' ? 'selected' : ''; ?>>Número normal</option>
+                                            <option value="currency" <?php echo (string) ($itemField['number_format'] ?? 'plain') === 'currency' ? 'selected' : ''; ?>>Moneda ($)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-3 mb-0">
+                                        <label>Decimales</label>
+                                        <input type="number" min="0" max="6" class="form-control" name="group_fields[number_decimals][]" value="<?php echo app_h((string) ($itemField['number_decimals'] ?? '0')); ?>">
+                                    </div>
+                                    <div class="form-group col-md-3 mb-0">
+                                        <label>Sufijo</label>
+                                        <input type="text" class="form-control" name="group_fields[suffix][]" value="<?php echo app_h((string) ($itemField['suffix'] ?? '')); ?>" placeholder="unidades">
+                                    </div>
+                                </div>
+                                <div class="form-row admin-group-field-number-suffix-options-wrap" <?php echo (string) ($itemField['type'] ?? 'text') === 'number' ? '' : 'hidden'; ?>>
+                                    <div class="form-group col-md-6 mb-0">
+                                        <label>Sufijo cuando el valor es 1</label>
+                                        <input type="text" class="form-control" name="group_fields[suffix_singular][]" value="<?php echo app_h((string) ($itemField['suffix_singular'] ?? '')); ?>" placeholder="unidad">
+                                    </div>
+                                    <div class="form-group col-md-6 mb-0">
+                                        <label>Sufijo para otros valores</label>
+                                        <input type="text" class="form-control" name="group_fields[suffix_plural][]" value="<?php echo app_h((string) ($itemField['suffix_plural'] ?? '')); ?>" placeholder="unidades">
+                                    </div>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -750,6 +859,7 @@ if (($_GET['ajax'] ?? '') === '1') {
             <span class="admin-user-pill">Usuario: <strong><?php echo app_h($_SESSION['s_nombre'] ?? ''); ?></strong> · Admin</span>
             <a class="admin-btn-ghost" href="bitacora.php?empresa=<?php echo app_h((string) $empresaId); ?>">Ver bitácora</a>
             <button type="button" class="admin-btn-ghost" id="adminPreviewBtn">Vista previa</button>
+            <a class="admin-btn-ghost" href="admin_destinatarios.php?empresa=<?php echo app_h((string) $empresaId); ?>">Parametrizar correos</a>
             <?php echo app_logout_form('admin-btn-danger', 'Cerrar sesión'); ?>
         </div>
     </header>

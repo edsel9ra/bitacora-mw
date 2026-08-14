@@ -63,6 +63,7 @@ $formType = (string) ($config['type'] ?? 'operational');
                     </select>
                 </form>
                 <a class="bit-logout" href="admin_formulario.php?empresa=<?php echo app_h((string) $empresaId); ?>" role="button">Administrar formulario</a>
+                <a class="bit-logout" href="admin_destinatarios.php?empresa=<?php echo app_h((string) $empresaId); ?>" role="button">Parametrizar correos</a>
             <?php endif; ?>
             <span class="bit-user-pill">Usuario: <strong><?php echo app_h($_SESSION['s_nombre'] ?? ''); ?></strong><?php echo app_is_admin() ? ' · Admin' : ''; ?></span>
             <?php echo app_logout_form('bit-logout', 'Cerrar sesión'); ?>

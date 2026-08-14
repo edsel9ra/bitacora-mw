@@ -20,13 +20,108 @@ function bit_report_display_value(string $value): string
     return $value === 'No' ? 'Sin novedad' : $value;
 }
 
-function bit_report_yes_no_value(string $answer, string $detail = ''): string
+function bit_report_format_number(string $value, array $field): string
+{
+    $value = trim($value);
+    $numericValue = str_replace(',', '.', $value);
+    if ($value === '' || !is_numeric($numericValue)) {
+        return $value;
+    }
+
+    if ((string) ($field['number_format'] ?? 'plain') !== 'currency') {
+        return $value;
+    }
+
+    $decimals = array_key_exists('number_decimals', $field)
+        ? max(0, min(6, (int) $field['number_decimals']))
+        : 0;
+    $number = (float) $numericValue;
+    $formatted = number_format(abs($number), $decimals, ',', '.');
+
+    return ($number < 0 ? '-' : '') . '$' . $formatted;
+}
+
+function bit_report_resolve_suffix(string $value, array $field): string
+{
+    if ((string) ($field['type'] ?? '') !== 'number') {
+        return '';
+    }
+
+    $plural = trim((string) ($field['suffix_plural'] ?? ''));
+    if ($plural === '') {
+        $plural = trim((string) ($field['suffix'] ?? ''));
+    }
+
+    $singular = trim((string) ($field['suffix_singular'] ?? ''));
+    $numericValue = str_replace(',', '.', trim($value));
+    if ((string) ($field['type'] ?? '') === 'number' && $singular !== '' && is_numeric($numericValue) && (float) $numericValue === 1.0) {
+        return $singular;
+    }
+
+    return $plural;
+}
+
+function bit_report_field_value($value, array $field): string
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '';
+    }
+    $rawValue = $value;
+
+    if ((string) ($field['type'] ?? '') === 'number') {
+        $value = bit_report_format_number($value, $field);
+    }
+
+    $suffix = bit_report_resolve_suffix($rawValue, $field);
+    if ($value !== '' && $suffix !== '') {
+        $value .= ' ' . $suffix;
+    }
+
+    return $value;
+}
+
+function bit_report_yes_no_detail_value(array $field, string $value): string
+{
+    if ((string) ($field['detail_type'] ?? 'textarea') !== 'number') {
+        return $value;
+    }
+
+    $detailSuffix = trim((string) ($field['detail_suffix'] ?? ''));
+    if ($detailSuffix === '') {
+        $detailSuffix = trim((string) ($field['suffix'] ?? ''));
+    }
+    $detailSuffixSingular = trim((string) ($field['detail_suffix_singular'] ?? ''));
+    if ($detailSuffixSingular === '') {
+        $detailSuffixSingular = trim((string) ($field['suffix_singular'] ?? ''));
+    }
+    $detailSuffixPlural = trim((string) ($field['detail_suffix_plural'] ?? ''));
+    if ($detailSuffixPlural === '') {
+        $detailSuffixPlural = trim((string) ($field['suffix_plural'] ?? ''));
+    }
+
+    return bit_report_field_value($value, [
+        'type' => 'number',
+        'number_format' => $field['detail_number_format'] ?? 'plain',
+        'number_decimals' => $field['detail_number_decimals'] ?? null,
+        'suffix' => $detailSuffix,
+        'suffix_singular' => $detailSuffixSingular,
+        'suffix_plural' => $detailSuffixPlural,
+    ]);
+}
+
+function bit_report_yes_no_value(string $answer, string $detail = '', string $noReportValue = ''): string
 {
     $answer = trim($answer);
     $detail = trim($detail);
+    $noReportValue = trim($noReportValue);
 
-    if ($answer === 'No' && $detail !== '') {
-        return $detail;
+    if ($answer === 'No') {
+        if ($detail !== '') {
+            return $detail;
+        }
+
+        return $noReportValue !== '' ? $noReportValue : 'Sin novedad';
     }
 
     return bit_report_display_value(trim($answer . ($detail !== '' ? '. ' . $detail : '')));
@@ -65,14 +160,14 @@ function bit_normalize_array_value($value): string
 function bit_get_default_texts(): array
 {
     return [
-        'DEFAULT_BPM'          => 'Sin novedad.',
+        'DEFAULT_BPM'          => 'No se recibio ninguna visita.',
         'DEFAULT_TI'           => 'Sin novedades con los equipos.',
-        'DEFAULT_TI1'          => 'Las facturas electrónicas se integran con código CUFE.',
-        'DEFAULT_TI2'          => 'Sin novedades.',
-        'DEFAULT_SST'          => 'Sin novedad.',
-        'DEFAULT_PE'           => 'Sin novedad.',
-        'DEFAULT_BH_ENVIADAS'  => 'No se enviaron bolsas a otras sedes.',
-        'DEFAULT_BH_RECIBIDAS' => 'No se recibieron bolsas de otras sedes.',
+        'DEFAULT_TI1'          => 'Sin novedades con la facturación eléctronica.',
+        'DEFAULT_TI2'          => 'Sin novedades por reportar.',
+        'DEFAULT_SST'          => 'Sin hallazgos para reportar.',
+        'DEFAULT_PE'           => 'El dia de hoy no se utilizo.',
+        'DEFAULT_BH_ENVIADAS'  => 'No se envio hielo a otras sedes.',
+        'DEFAULT_BH_RECIBIDAS' => 'No se recibio hielo de otras sedes.',
         'DEFAULT_FACTURAS'     => 'No se anularon facturas.',
     ];
 }
@@ -159,20 +254,20 @@ function bit_get_conditional_rules(array $defaults): array
     return [
         ['radio' => 'visita_ss',         'field' => 'bpm1',    'default' => $defaults['DEFAULT_BPM']],
         ['radio' => 'visita_dagma',      'field' => 'bpm2',    'default' => $defaults['DEFAULT_BPM']],
-        ['radio' => 'visita_west',       'field' => 'bpm3',    'default' => $defaults['DEFAULT_BPM']],
-        ['radio' => 'visita_cp',         'field' => 'bpm4',    'default' => $defaults['DEFAULT_BPM']],
-        ['radio' => 'visita_acu',        'field' => 'bpm5',    'default' => $defaults['DEFAULT_BPM']],
+        ['radio' => 'visita_west',       'field' => 'bpm3',    'default' => $defaults['El dia de hoy no se recibio ninguna visita.']],
+        ['radio' => 'visita_cp',         'field' => 'bpm4',    'default' => $defaults['El dia de hoy no se fumigo.']],
+        ['radio' => 'visita_acu',        'field' => 'bpm5',    'default' => $defaults['El dia de hoy no se realizo ninguna entrega.']],
 
         ['radio' => 'equipos_ti',        'field' => 'ti',      'default' => $defaults['DEFAULT_TI']],
         ['radio' => 'facturas_ti',       'field' => 'ti1',     'default' => $defaults['DEFAULT_TI1']],
         ['radio' => 'novedades_ti',      'field' => 'ti2',     'default' => $defaults['DEFAULT_TI2']],
 
-        ['radio' => 'accidentes_sst',    'field' => 'sst1',    'default' => $defaults['DEFAULT_SST']],
-        ['radio' => 'incapacidades_sst', 'field' => 'sst2',    'default' => $defaults['DEFAULT_SST']],
+        ['radio' => 'accidentes_sst',    'field' => 'sst1',    'default' => $defaults['Sin eventos para reportar.']],
+        ['radio' => 'incapacidades_sst', 'field' => 'sst2',    'default' => $defaults['Sin ningun caso para reportar.']],
         ['radio' => 'ambiente_laboral',  'field' => 'sst3',    'default' => $defaults['DEFAULT_SST']],
         ['radio' => 'senal_sst',         'field' => 'sst4',    'default' => $defaults['DEFAULT_SST']],
         ['radio' => 'entrega_epp',       'field' => 'sst6',    'default' => $defaults['DEFAULT_SST']],
-        ['radio' => 'novedades_sst',     'field' => 'sst8',    'default' => $defaults['DEFAULT_SST']],
+        ['radio' => 'novedades_sst',     'field' => 'sst8',    'default' => $defaults['Sin novedades por reportar.']],
 
         ['radio' => 'hielo_enviado',     'field' => 'hielo4',  'default' => $defaults['DEFAULT_BH_ENVIADAS']],
         ['radio' => 'hielo_recibido',    'field' => 'hielo5',  'default' => $defaults['DEFAULT_BH_RECIBIDAS']],
@@ -371,7 +466,7 @@ function bit_render_group_item(array $field, int $index, array $data): string
 
         $name = app_bitacora_group_item_field_name($groupName, $index, $itemFieldName);
         $label = (string) ($itemField['label'] ?? $itemFieldName);
-        $value = bit_report_display_value((string) ($data[$name] ?? ''));
+        $value = bit_report_display_value(bit_report_field_value($data[$name] ?? '', $itemField));
 
         if ($value !== '') {
             $rows[] = '<div class="sub-item"><strong>' . bit_h($label) . ':</strong> ' . bit_e($value) . '</div>';
@@ -396,7 +491,7 @@ function bit_render_quantity_group(array $field, array $data): array
     $quantityName = (string) ($field['quantity_name'] ?? ($name . '_cantidad'));
     $answer = trim((string) ($data[$name] ?? ''));
     $renderAnswer = $answer === 'No'
-        ? (trim((string) ($field['no_report_value'] ?? '')) ?: 'Sin novedad')
+        ? bit_report_yes_no_value($answer, '', (string) ($field['no_report_value'] ?? ''))
         : ($answer !== '' ? $answer : 'No diligenciado');
     $rows = [bit_render_detail($label, $renderAnswer, true)];
 
@@ -409,6 +504,21 @@ function bit_render_quantity_group(array $field, array $data): array
     $quantity = max(0, min($quantity, $max));
 
     if ($quantity > 0) {
+        $quantitySuffix = trim((string) ($field['suffix_plural'] ?? ''));
+        if ($quantitySuffix === '') {
+            $quantitySuffix = trim((string) ($field['suffix'] ?? ''));
+        }
+        if ($quantitySuffix === '') {
+            $quantitySuffix = trim((string) ($field['suffix_singular'] ?? ''));
+        }
+        if ($quantitySuffix !== '') {
+            $rows[] = bit_render_detail((string) ($field['quantity_label'] ?? 'Cantidad'), bit_report_field_value($quantity, [
+                'type' => 'number',
+                'suffix' => $field['suffix'] ?? '',
+                'suffix_plural' => $field['suffix_plural'] ?? '',
+                'suffix_singular' => $field['suffix_singular'] ?? '',
+            ]), true);
+        }
         foreach (range(1, $quantity) as $index) {
             $rows[] = bit_render_group_item($field, $index, $data);
         }
@@ -438,7 +548,14 @@ function bit_render_direct_quantity_group(array $field, array $data): array
         return [bit_render_detail($label, $zeroValue, true)];
     }
 
-    $rows = [bit_render_detail($label, (string) $quantity, true)];
+    $rows = [bit_render_detail($label, bit_report_field_value($quantity, [
+        'type' => 'number',
+        'number_format' => $field['number_format'] ?? 'plain',
+        'number_decimals' => $field['number_decimals'] ?? null,
+        'suffix' => $field['suffix'] ?? '',
+        'suffix_singular' => $field['suffix_singular'] ?? '',
+        'suffix_plural' => $field['suffix_plural'] ?? '',
+    ]), true)];
     foreach (range(1, $quantity) as $index) {
         $rows[] = bit_render_group_item($field, $index, $data);
     }
@@ -454,7 +571,9 @@ function bit_render_detail_group(array $field, array $data): array
     $name = (string) ($field['name'] ?? '');
     $label = (string) ($field['label'] ?? $name);
     $answer = trim((string) ($data[$name] ?? ''));
-    $renderAnswer = $answer === 'No' ? 'Sin novedad' : ($answer !== '' ? $answer : 'No diligenciado');
+    $renderAnswer = $answer === 'No'
+        ? bit_report_yes_no_value($answer, '', (string) ($field['no_report_value'] ?? ''))
+        : ($answer !== '' ? $answer : 'No diligenciado');
     $rows = [bit_render_detail($label, $renderAnswer, true)];
 
     if ($answer !== 'Si') {
@@ -469,7 +588,7 @@ function bit_render_detail_group(array $field, array $data): array
 
         $name = app_bitacora_detail_group_field_name((string) ($field['name'] ?? ''), $detailFieldName);
         $label = (string) ($detailField['label'] ?? $detailFieldName);
-        $rows[] = bit_render_detail($label, $data[$name] ?? '');
+        $rows[] = bit_render_detail($label, bit_report_field_value($data[$name] ?? '', $detailField));
     }
 
     return $rows;
@@ -486,7 +605,7 @@ function bit_render_multiselect_detail_group(array $field, array $data): array
     }
 
     if (!empty($groupData['no_apply'])) {
-        return [bit_render_detail($label, 'Sin novedad', true)];
+        return [bit_render_detail($label, 'No se tuvieron visitas el dia de hoy.', true)];
     }
 
     $rows = [];
@@ -497,9 +616,9 @@ function bit_render_multiselect_detail_group(array $field, array $data): array
         }
 
         $rows[] = '<div class="sub-item"><strong>' . bit_h($visitor) . '</strong><div style="margin-left:12px; margin-top:4px;">' .
-            bit_render_detail('Hora ingreso', (string) ($item['hora_inicio'] ?? '')) .
-            bit_render_detail('Hora salida', (string) ($item['hora_final'] ?? '')) .
-            bit_render_detail('Actividades realizadas', (string) ($item['actividades'] ?? '')) .
+            bit_render_detail('HORA INGRESO', (string) ($item['hora_inicio'] ?? '')) .
+            bit_render_detail('HORA SALIDA', (string) ($item['hora_final'] ?? '')) .
+            bit_render_detail('ACTIVIDADES REALIZADAS', (string) ($item['actividades'] ?? '')) .
             '</div></div>';
     }
 
@@ -539,9 +658,9 @@ function bit_render_schema_field_rows(array $field, array $data): array
         $answer = trim((string) ($data[$name] ?? ''));
         $rows = [bit_render_detail($label, $answer !== '' ? $answer : 'No diligenciado', true)];
         if ($answer === 'Si') {
-            $rows[] = bit_render_detail('Hora encendido', (string) ($data['mant5'] ?? ''));
-            $rows[] = bit_render_detail('Hora apagado', (string) ($data['mant6'] ?? ''));
-            $rows[] = bit_render_detail('Tiempo de uso (minutos)', (string) ($data['mant7'] ?? ''));
+            $rows[] = bit_render_detail('HORA ENCENDIDO', (string) ($data['mant5'] ?? ''));
+            $rows[] = bit_render_detail('HORA APAGADO', (string) ($data['mant6'] ?? ''));
+            $rows[] = bit_render_detail('TIEMPO DE USO (MINUTOS)', (string) ($data['mant7'] ?? ''));
         }
         return $rows;
     }
@@ -556,13 +675,11 @@ function bit_render_schema_field_rows(array $field, array $data): array
         }
         $detailName = (string) ($field['detail_name'] ?? '');
         $detail = $detailName !== '' ? trim((string) ($data[$detailName] ?? '')) : '';
-        $value = bit_report_yes_no_value($value, $detail);
+        $detail = bit_report_yes_no_detail_value($field, $detail);
+        $value = bit_report_yes_no_value($value, $detail, (string) ($field['no_report_value'] ?? ''));
     }
 
-    $suffix = (string) ($field['suffix'] ?? '');
-    if ($value !== '' && $suffix !== '') {
-        $value .= ' ' . $suffix;
-    }
+    $value = bit_report_field_value($value, $field);
     return [bit_render_detail($label, $value)];
 }
 

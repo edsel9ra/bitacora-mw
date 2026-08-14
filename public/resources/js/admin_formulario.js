@@ -140,12 +140,21 @@
             '<div class="form-group col-md-4 mb-2"><label>Etiqueta</label><input type="text" class="form-control" name="group_fields[label][]" placeholder="Nombre del visitante"></div>' +
             '<div class="form-group col-md-3 mb-2"><label>Tipo</label><select class="form-control admin-group-field-type" name="group_fields[type][]">' +
             adminGroupFieldTypeOptions('text') +
-            '</select></div>' +
-            '<div class="form-group col-md-2 mb-2 d-flex align-items-center"><label class="form-check-label mr-2 mb-0"><input type="checkbox" class="form-check-input" name="group_fields[required][]" value="' + uid + '" checked> Obligatorio</label><button type="button" class="admin-btn-sm admin-btn-danger-ghost admin-group-field-remove" title="Quitar sub-campo">Quitar</button></div>' +
-            '</div>' +
-            '<input type="hidden" name="group_fields[row_key][]" value="' + uid + '">' +
-            '<div class="form-group mb-0 admin-group-field-options-wrap" data-options-for="select" hidden><label>Opciones de la lista (una por línea)</label><textarea class="form-control" name="group_fields[options][]" rows="2"></textarea></div>' +
-            '</div>'
+             '</select></div>' +
+             '<div class="form-group col-md-2 mb-2 d-flex align-items-center"><label class="form-check-label mr-2 mb-0"><input type="checkbox" class="form-check-input" name="group_fields[required][]" value="' + uid + '" checked> Obligatorio</label><button type="button" class="admin-btn-sm admin-btn-danger-ghost admin-group-field-remove" title="Quitar sub-campo">Quitar</button></div>' +
+             '</div>' +
+             '<input type="hidden" name="group_fields[row_key][]" value="' + uid + '">' +
+             '<div class="form-group mb-0 admin-group-field-options-wrap" data-options-for="select" hidden><label>Opciones de la lista (una por línea)</label><textarea class="form-control" name="group_fields[options][]" rows="2"></textarea></div>' +
+             '<div class="form-row admin-group-field-number-options-wrap" hidden>' +
+             '<div class="form-group col-md-6 mb-0"><label>Formato de presentación</label><select class="form-control" name="group_fields[number_format][]"><option value="plain" selected>Número normal</option><option value="currency">Moneda ($)</option></select></div>' +
+             '<div class="form-group col-md-3 mb-0"><label>Decimales</label><input type="number" min="0" max="6" class="form-control" name="group_fields[number_decimals][]" value="0"></div>' +
+             '<div class="form-group col-md-3 mb-0"><label>Sufijo</label><input type="text" class="form-control" name="group_fields[suffix][]" placeholder="unidades"></div>' +
+             '</div>' +
+             '<div class="form-row admin-group-field-number-suffix-options-wrap" hidden>' +
+             '<div class="form-group col-md-6 mb-0"><label>Sufijo cuando el valor es 1</label><input type="text" class="form-control" name="group_fields[suffix_singular][]" placeholder="unidad"></div>' +
+             '<div class="form-group col-md-6 mb-0"><label>Sufijo para otros valores</label><input type="text" class="form-control" name="group_fields[suffix_plural][]" placeholder="unidades"></div>' +
+             '</div>' +
+             '</div>'
         );
     }
 
@@ -160,6 +169,8 @@
     $(document).on('change', '.admin-group-field-type', function () {
         var $row = $(this).closest('.admin-group-field-row');
         $row.find('.admin-group-field-options-wrap').prop('hidden', $(this).val() !== 'select');
+        $row.find('.admin-group-field-number-options-wrap').prop('hidden', $(this).val() !== 'number');
+        $row.find('.admin-group-field-number-suffix-options-wrap').prop('hidden', $(this).val() !== 'number');
     });
 
     /* ===== Envío de formularios vía AJAX ===== */

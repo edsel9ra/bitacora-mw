@@ -23,7 +23,7 @@ docker compose --env-file .env.dev-real -f docker-compose.yml -f docker-compose.
 docker compose --env-file .env.dev-real -f docker-compose.yml -f docker-compose.dev-real.yml up -d --build
 ```
 
-Este modo utiliza los destinatarios activos de la base de datos junto con los definidos en la configuración PHP. `bitacora_destinatarios` agrega correos principales por empresa y sede; `bitacora_seccion_destinatarios` define los correos restringidos por sección. Un destinatario que ya recibe el correo principal no recibe un segundo correo por sección.
+Este modo utiliza los destinatarios administrados en la base de datos. `bitacora_destinatarios` conserva los correos principales por empresa y sede; `bitacora_seccion_destinatarios` define los correos restringidos por sección. Una asignación activa por sección tiene precedencia: ese destinatario queda fuera del correo completo y recibe únicamente las secciones asignadas. La parametrización administrativa está disponible para usuarios `admin` en `vistas/admin_destinatarios.php`.
 
 Para probar solo la conexión SMTP antes de enviar una bitácora:
 
@@ -134,6 +134,27 @@ unset BITACORA_ADMIN_PASSWORD
 
 Tipos soportados: `text`, `textarea`, `number`, `date`, `time`, `select`, `yes_no`, `yes_no_quantity_group`, `quantity_group`, `multiselect_detail_group` y `subsection`. Una subsección es presentacional: usa `label` como título, acepta `description`, no genera datos y conserva su orden en formulario, PDF y correo.
 
+Los campos `number` conservan el valor numérico en el formulario y permiten formatear su presentación en PDF y correo. `number_format: "currency"` usa formato colombiano (`123456` se muestra como `$123.456`); `number_decimals` permite definir entre 0 y 6 decimales. El atributo `suffix` agrega texto, y `suffix_singular` permite usar un texto diferente cuando el valor es exactamente `1`:
+
+```json
+{
+  "name": "valor_venta",
+  "label": "Valor de venta",
+  "type": "number",
+  "number_format": "currency",
+  "number_decimals": 0,
+  "section": "Operaciones"
+}
+```
+
+```php
+app_bitacora_field('number', 'cantidad_cajas', 'Cantidad de cajas', [
+    'suffix' => 'cajas',
+    'suffix_singular' => 'caja',
+    'suffix_plural' => 'cajas',
+])
+```
+
 Las subsecciones fijas del esquema base se pueden declarar en PHP con `app_bitacora_subsection()` dentro del arreglo `fields` de una sección:
 
 ```php
@@ -173,6 +194,44 @@ app_bitacora_yes_no_quantity_group_field(
         app_bitacora_field('text', 'nombre_proveedor', 'Nombre del proveedor'),
     ],
     ['no_report_value' => 'No se recibieron proveedores durante la jornada']
+)
+```
+
+En estos grupos, `suffix` se puede usar para agregar texto a la cantidad total en PDF y correo. `suffix_singular` se usa cuando la cantidad es `1` y `suffix_plural` cuando es mayor o igual a `2`; si no se configuran, se mantiene el `suffix` existente. El formulario continúa enviando únicamente el número:
+
+```php
+app_bitacora_yes_no_quantity_group_field(
+    'visitas',
+    '¿Hubo visitas?',
+    'visitas_cantidad',
+    'Cantidad de visitas',
+    [app_bitacora_field('text', 'visitante', 'Visitante')],
+    [
+        'suffix' => 'unidades',
+        'suffix_singular' => 'unidad',
+        'suffix_plural' => 'unidades',
+    ]
+)
+```
+
+Los campos Sí/No simples y los grupos Sí/No con detalle también aceptan `no_report_value`. Si no se especifica, el texto usado es `Sin novedad`; si existe un detalle explícito, este conserva prioridad:
+
+```php
+app_bitacora_yes_no_field(
+    'novedades',
+    '¿Hubo novedades?',
+    'novedadesGroup',
+    'novedades_detalle',
+    'Detalle',
+    'textarea',
+    ['no_report_value' => 'No se presentaron novedades']
+)
+
+app_bitacora_yes_no_detail_group_field(
+    'material_pop',
+    '¿Se entregó material POP?',
+    [app_bitacora_field('text', 'tipo_material', 'Tipo de material')],
+    ['no_report_value' => 'No se entregó material POP']
 )
 ```
 

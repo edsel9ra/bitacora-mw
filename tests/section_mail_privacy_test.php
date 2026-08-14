@@ -96,14 +96,79 @@ namespace {
         return $value === 'No' ? 'Sin novedad' : $value;
     }
 
-    function bit_report_yes_no_value(string $answer, string $detail = ''): string
+    function bit_report_field_value($value, array $field): string
+    {
+        $value = trim((string) $value);
+        $rawValue = $value;
+        if ((string) ($field['type'] ?? '') === 'number' && (string) ($field['number_format'] ?? 'plain') === 'currency') {
+            $numericValue = str_replace(',', '.', $value);
+            if (is_numeric($numericValue)) {
+                $decimals = array_key_exists('number_decimals', $field) ? (int) $field['number_decimals'] : 0;
+                $number = (float) $numericValue;
+                $value = ($number < 0 ? '-' : '') . '$' . number_format(abs($number), $decimals, ',', '.');
+            }
+        }
+        if ((string) ($field['type'] ?? '') !== 'number') {
+            return $value;
+        }
+        $suffix = trim((string) ($field['suffix_plural'] ?? '')) ?: trim((string) ($field['suffix'] ?? ''));
+        $numericValue = str_replace(',', '.', $rawValue);
+        if (trim((string) ($field['suffix_singular'] ?? '')) !== '' && is_numeric($numericValue) && (float) $numericValue === 1.0) {
+            $suffix = trim((string) $field['suffix_singular']);
+        }
+        return $value !== '' && $suffix !== '' ? $value . ' ' . $suffix : $value;
+    }
+
+    function bit_report_yes_no_detail_value(array $field, string $value): string
+    {
+        if ((string) ($field['detail_type'] ?? 'textarea') !== 'number') {
+            return $value;
+        }
+
+        return bit_report_field_value($value, [
+            'type' => 'number',
+            'number_format' => $field['detail_number_format'] ?? 'plain',
+            'number_decimals' => $field['detail_number_decimals'] ?? null,
+            'suffix' => $field['detail_suffix'] ?? ($field['suffix'] ?? ''),
+            'suffix_singular' => $field['detail_suffix_singular'] ?? ($field['suffix_singular'] ?? ''),
+            'suffix_plural' => $field['detail_suffix_plural'] ?? ($field['suffix_plural'] ?? ''),
+        ]);
+    }
+
+    function bit_report_yes_no_value(string $answer, string $detail = '', string $noReportValue = ''): string
     {
         $answer = trim($answer);
         $detail = trim($detail);
-        if ($answer === 'No' && $detail !== '') {
-            return $detail;
+        $noReportValue = trim($noReportValue);
+        if ($answer === 'No') {
+            if ($detail !== '') {
+                return $detail;
+            }
+            return $noReportValue !== '' ? $noReportValue : 'Sin novedad';
         }
         return bit_report_display_value(trim($answer . ($detail !== '' ? '. ' . $detail : '')));
+    }
+
+    function bit_render_quantity_group(array $field, array $data): array
+    {
+        $name = (string) ($field['name'] ?? '');
+        $answer = trim((string) ($data[$name] ?? ''));
+        if ($answer !== 'Si') {
+            return [bit_render_detail((string) ($field['label'] ?? $name), $answer === 'No' ? 'Sin novedad' : 'No diligenciado', true)];
+        }
+
+        $quantityName = (string) ($field['quantity_name'] ?? ($name . '_cantidad'));
+        $quantity = (int) ($data[$quantityName] ?? 0);
+        return [bit_render_detail(
+            (string) ($field['quantity_label'] ?? 'Cantidad'),
+            bit_report_field_value($quantity, [
+                'type' => 'number',
+                'suffix' => $field['suffix'] ?? '',
+                'suffix_singular' => $field['suffix_singular'] ?? '',
+                'suffix_plural' => $field['suffix_plural'] ?? '',
+            ]),
+            true
+        )];
     }
 
     function bit_render_detail(string $title, string $value, bool $mostrarSiVacio = false): string
@@ -177,10 +242,37 @@ namespace {
             'label' => '¿Hubo novedad?',
             'detail_name' => 'novedad_equipo_detalle',
             'detail_type' => 'textarea',
+        ], [
+            'type' => 'yes_no',
+            'name' => 'novedad_configurada',
+            'label' => '¿Hubo novedad configurada?',
+            'detail_name' => 'novedad_configurada_detalle',
+            'detail_type' => 'number',
+            'suffix_singular' => 'bolsa',
+            'suffix_plural' => 'bolsas',
+            'no_report_value' => 'No hubo novedades configuradas',
+        ], [
+            'type' => 'number',
+            'name' => 'valor_configurado',
+            'label' => 'Valor configurado',
+            'number_format' => 'currency',
+        ], [
+            'type' => 'yes_no_quantity_group',
+            'name' => 'visitas_configuradas',
+            'label' => '¿Hubo visitas configuradas?',
+            'quantity_name' => 'visitas_configuradas_cantidad',
+            'quantity_label' => 'Cantidad de visitas',
+            'suffix' => 'unidades',
+            'suffix_singular' => 'unidad',
+            'suffix_plural' => 'unidades',
         ]],
     ]];
     $data['novedad_equipo'] = 'No';
     $data['novedad_equipo_detalle'] = 'Sin novedad.';
+    $data['novedad_configurada'] = 'No';
+    $data['valor_configurado'] = '123456';
+    $data['visitas_configuradas'] = 'Si';
+    $data['visitas_configuradas_cantidad'] = '3';
     $fullRecipients = ['to' => ['global@example.test'], 'cc' => [], 'bcc' => []];
 
     $sent = bit_send_section_emails(1, 'PANCE', $data, $sections, $fullRecipients, 'Bitacora');
@@ -189,11 +281,19 @@ namespace {
     section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, 'Datos del equipo') !== false, 'subseccion incluida en correo por seccion');
     section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, 'Incluye novedades') !== false, 'descripcion incluida en correo por seccion');
     section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, 'Sin novedad') !== false, 'respuesta No convertida en correo por seccion');
+    section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, 'No hubo novedades configuradas') !== false, 'respuesta No usa valor configurado en correo por seccion');
+    section_mail_assert_same(false, strpos(PHPMailer::$instances[0]->Body, 'No hubo novedades configuradas bolsas') !== false, 'correo por seccion no agrega sufijo al No configurado');
+    section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, '$123.456') !== false, 'numero monetario formateado en correo por seccion');
+    section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, '3 unidades') !== false, 'sufijo de cantidad en correo por seccion');
     section_mail_assert_same(false, strpos(PHPMailer::$instances[0]->Body, 'No. Sin novedad.') !== false, 'correo por seccion sin prefijo No');
 
     $supervisionBody = bit_render_supervision_body($sections, $data);
     section_mail_assert_same(true, strpos($supervisionBody, 'Datos del equipo') !== false, 'subseccion incluida en correo de supervision');
     section_mail_assert_same(true, strpos($supervisionBody, 'Sin novedad') !== false, 'respuesta No convertida en correo de supervision');
+    section_mail_assert_same(true, strpos($supervisionBody, 'No hubo novedades configuradas') !== false, 'respuesta No usa valor configurado en correo de supervision');
+    section_mail_assert_same(false, strpos($supervisionBody, 'No hubo novedades configuradas bolsas') !== false, 'correo de supervision no agrega sufijo al No configurado');
+    section_mail_assert_same(true, strpos($supervisionBody, '$123.456') !== false, 'numero monetario formateado en correo de supervision');
+    section_mail_assert_same(true, strpos($supervisionBody, '3 unidades') !== false, 'sufijo de cantidad en correo de supervision');
     section_mail_assert_same(false, strpos($supervisionBody, 'No. Sin novedad.') !== false, 'correo de supervision sin prefijo No');
 
     $queued = bit_queue_section_emails(1, 'PANCE', 'prueba', $data, $sections, $fullRecipients, 'Bitacora', null, 42);

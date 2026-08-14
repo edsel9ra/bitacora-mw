@@ -1,0 +1,46 @@
+.admin-mail-table code {
+    word-break: break-all;
+}
+
+.mail-inline-form {
+    display: inline-flex;
+    gap: 4px;
+    margin: 0;
+}
+
+.mail-chip-active {
+    color: #176b3a;
+    background: #e5f5eb;
+    border-color: #b8e2c7;
+}
+
+.mail-chip-inactive {
+    color: #8a2d36;
+    background: #fde8ea;
+    border-color: #f4c2c7;
+}
+
+.mail-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.mail-preview-grid h3 {
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--bit-red-dark, #8b1116);
+}
+
+.mail-preview-grid ol {
+    margin: 0;
+    padding-left: 22px;
+}
+
+@media (max-width: 720px) {
+    .mail-preview-grid {
+        grid-template-columns: 1fr;
+    }
+}

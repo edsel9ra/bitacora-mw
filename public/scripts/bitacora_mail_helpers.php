@@ -82,8 +82,9 @@ function bit_section_email_rows_for_field(array $field, array $data): array
 
         $detailName = (string) ($field['detail_name'] ?? '');
         $detail = $detailName !== '' ? trim((string) ($data[$detailName] ?? '')) : '';
-        $value = bit_report_yes_no_value($answer, $detail);
-        return [bit_render_detail($label, $value, true)];
+        $detail = bit_report_yes_no_detail_value($field, $detail);
+        $value = bit_report_yes_no_value($answer, $detail, (string) ($field['no_report_value'] ?? ''));
+        return [bit_render_detail($label, bit_report_field_value($value, $field), true)];
     }
 
     $value = trim((string) ($data[$name] ?? ''));
@@ -91,10 +92,7 @@ function bit_section_email_rows_for_field(array $field, array $data): array
         $value = trim((string) ($data['fecha'] ?? $value));
     }
 
-    $suffix = (string) ($field['suffix'] ?? '');
-    if ($value !== '' && $suffix !== '') {
-        $value .= ' ' . $suffix;
-    }
+    $value = bit_report_field_value($value, $field);
 
     return [bit_render_detail($label, $value)];
 }
@@ -202,10 +200,11 @@ function bit_render_supervision_body(array $sections, array $data): string
             if ($type === 'yes_no') {
                 $detailName = (string) ($field['detail_name'] ?? '');
                 $detail = $detailName !== '' ? trim((string) ($data[$detailName] ?? '')) : '';
-                $value = bit_report_yes_no_value($value, $detail);
+                $detail = bit_report_yes_no_detail_value($field, $detail);
+                $value = bit_report_yes_no_value($value, $detail, (string) ($field['no_report_value'] ?? ''));
             }
 
-            $value = bit_report_display_value($value);
+            $value = bit_report_display_value(bit_report_field_value($value, $field));
 
             if ($value === '') {
                 continue;

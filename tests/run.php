@@ -11,6 +11,7 @@ require_once __DIR__ . '/../public/scripts/bitacora_download_helpers.php';
 require_once __DIR__ . '/../public/scripts/bitacora_validation_helpers.php';
 require_once __DIR__ . '/../public/config/security.php';
 require_once __DIR__ . '/../public/config/admin_formulario_helpers.php';
+require_once __DIR__ . '/../public/config/admin_destinatarios_helpers.php';
 require_once __DIR__ . '/../public/config/bitacora_drafts.php';
 require_once __DIR__ . '/../public/vistas/bitacora_view_helpers.php';
 require_once __DIR__ . '/../scripts/process_bitacora_email_queue.php';
@@ -51,9 +52,39 @@ test_assert_same(
     ]),
     'recipient normalization removes cross-type duplicates'
 );
+test_assert_same(
+    ['to' => ['primary@example.test'], 'cc' => ['copy@example.test'], 'bcc' => []],
+    app_bitacora_filter_full_recipients([
+        'to' => ['primary@example.test', 'section@example.test'],
+        'cc' => ['copy@example.test'],
+        'bcc' => ['SECTION@example.test'],
+    ], [[
+        'email' => 'section@example.test',
+        'sections' => ['operaciones'],
+    ]]),
+    'section recipients are excluded from full email'
+);
+test_assert_same('admin@example.test', bit_admin_validate_email(' Admin@Example.Test '), 'recipient email normalization');
+test_assert_same('CCO', bit_admin_recipient_type_options()['bcc'] ?? null, 'recipient type labels');
+test_assert_same(
+    ['base' => 0, 'operaciones' => 1],
+    bit_admin_section_order(['base' => 'Datos básicos', 'operaciones' => 'Operaciones']),
+    'section order follows form schema'
+);
+test_assert_throws(
+    static fn() => bit_admin_validate_email('not-an-email'),
+    InvalidArgumentException::class,
+    'invalid recipient email rejected'
+);
 test_assert_same('No se enviaron bolsas a otras sedes', bit_report_yes_no_value('No', 'No se enviaron bolsas a otras sedes'), 'negative answer uses detail only');
 test_assert_same('Sin novedad', bit_report_yes_no_value('No'), 'negative answer without detail');
+test_assert_same('No hubo novedades', bit_report_yes_no_value('No', '', 'No hubo novedades'), 'negative answer uses configured report value');
 test_assert_same('Si. Detalle', bit_report_yes_no_value('Si', 'Detalle'), 'positive answer keeps detail prefix');
+test_assert_same('$123.456', bit_report_format_number('123456', ['type' => 'number', 'number_format' => 'currency']), 'currency number report format');
+test_assert_same('$123.456,78', bit_report_format_number('123456.78', ['type' => 'number', 'number_format' => 'currency', 'number_decimals' => 2]), 'currency decimal report format');
+test_assert_same('3 unidades', bit_report_field_value('3', ['type' => 'number', 'suffix' => 'unidades']), 'number suffix report format');
+test_assert_same('1 unidad', bit_report_field_value('1', ['type' => 'number', 'suffix' => 'unidades', 'suffix_singular' => 'unidad']), 'number singular suffix report format');
+test_assert_same('3 unidades', bit_report_field_value('3', ['type' => 'number', 'suffix' => 'unidades', 'suffix_singular' => 'unidad']), 'number plural suffix report format');
 test_assert_same(true, strpos(bit_render_detail('Estado', 'No'), 'Sin novedad') !== false, 'report detail exact No value');
 
 $defaultTexts = bit_get_default_texts();
@@ -164,6 +195,7 @@ test_assert_same('date', $yesNoDateField['detail_type'], 'yes_no date helper');
 $normalizedYesNoDate = app_bitacora_normalize_dynamic_field(array_merge($yesNoDateField, ['section' => 'Operaciones']));
 test_assert_same('date', $normalizedYesNoDate['detail_type'] ?? null, 'yes_no date normalization');
 test_assert_same('fechab', $normalizedYesNoDate['detail_default_from'] ?? null, 'yes_no detail default source normalization');
+test_assert_same('Sin novedad', $normalizedYesNoDate['no_report_value'] ?? null, 'yes_no default no report value normalization');
 $invalidDefaultSourceField = app_bitacora_normalize_dynamic_field(array_merge($yesNoDateField, [
     'section' => 'Operaciones',
     'detail_default_from' => 'fecha-invalida',
@@ -178,6 +210,127 @@ test_assert_same(true, strpos($yesNoDateHtml, 'data-default-from="fechab"') !== 
 
 $yesNoDateDefinitions = bit_draft_field_definitions([['fields' => [$yesNoDateField]]]);
 test_assert_same('date', $yesNoDateDefinitions['fecha_visita']['field']['type'] ?? null, 'yes_no date draft definition');
+
+$yesNoNoReportField = app_bitacora_yes_no_field(
+    'novedad_configurada',
+    '¿Hubo una novedad configurada?',
+    'novedadConfiguradaGroup',
+    'novedad_configurada_detalle',
+    'Detalle',
+    'textarea',
+    ['no_report_value' => 'No hubo novedades configuradas']
+);
+test_assert_same('No hubo novedades configuradas', $yesNoNoReportField['no_report_value'] ?? null, 'yes_no custom no report value');
+$normalizedYesNoNoReportField = app_bitacora_normalize_dynamic_field(array_merge($yesNoNoReportField, ['section' => 'Operaciones']));
+test_assert_same('No hubo novedades configuradas', $normalizedYesNoNoReportField['no_report_value'] ?? null, 'yes_no custom no report value normalization');
+$yesNoNoReportRows = bit_render_schema_field_rows($yesNoNoReportField, [
+    'fecha_iso' => '2026-08-05',
+    'novedad_configurada' => 'No',
+]);
+test_assert_same(true, strpos(implode('', $yesNoNoReportRows), 'No hubo novedades configuradas') !== false, 'yes_no custom no report value rendering');
+
+$yesNoDetailNoReportField = app_bitacora_yes_no_detail_group_field(
+    'material_configurado',
+    '¿Se entregó material configurado?',
+    [app_bitacora_field('text', 'tipo_material_configurado', 'Tipo de material')],
+    ['no_report_value' => 'No se entregó material configurado']
+);
+test_assert_same('No se entregó material configurado', $yesNoDetailNoReportField['no_report_value'] ?? null, 'yes_no detail group custom no report value');
+$yesNoDetailNoReportRows = bit_render_detail_group($yesNoDetailNoReportField, [
+    'fecha_iso' => '2026-08-05',
+    'material_configurado' => 'No',
+]);
+test_assert_same(true, strpos(implode('', $yesNoDetailNoReportRows), 'No se entregó material configurado') !== false, 'yes_no detail group custom no report value rendering');
+$yesNoDetailDefaultRows = bit_render_detail_group(
+    app_bitacora_yes_no_detail_group_field(
+        'material_sin_configurar',
+        '¿Se entregó otro material?',
+        []
+    ),
+    [
+        'fecha_iso' => '2026-08-05',
+        'material_sin_configurar' => 'No',
+    ]
+);
+test_assert_same(true, strpos(implode('', $yesNoDetailDefaultRows), 'Sin novedad') !== false, 'yes_no detail group default no report value rendering');
+
+$yesNoNumericSuffixField = app_bitacora_yes_no_field(
+    'hielo_kolbitos_prueba',
+    '¿Se compra hielo a Kolbitos?',
+    'hieloKolbitosPruebaGroup',
+    'hielo_kolbitos_cantidad',
+    'Cantidad comprada',
+    'number',
+    [
+        'suffix_singular' => 'bolsa',
+        'suffix_plural' => 'bolsas',
+        'no_report_value' => 'No se realizó compra de hielo.',
+    ]
+);
+$yesNoNumericNoRows = bit_render_schema_field_rows($yesNoNumericSuffixField, [
+    'fecha_iso' => '2026-08-05',
+    'hielo_kolbitos_prueba' => 'No',
+]);
+$yesNoNumericNoHtml = implode('', $yesNoNumericNoRows);
+test_assert_same(true, strpos($yesNoNumericNoHtml, 'No se realizó compra de hielo.') !== false, 'yes_no numeric custom No report value');
+test_assert_same(false, strpos($yesNoNumericNoHtml, 'bolsas') !== false, 'yes_no numeric No report value has no suffix');
+$yesNoNumericOneRows = bit_render_schema_field_rows($yesNoNumericSuffixField, [
+    'fecha_iso' => '2026-08-05',
+    'hielo_kolbitos_prueba' => 'Si',
+    'hielo_kolbitos_cantidad' => '1',
+]);
+test_assert_same(true, strpos(implode('', $yesNoNumericOneRows), '1 bolsa') !== false, 'yes_no numeric singular suffix');
+$yesNoNumericManyRows = bit_render_schema_field_rows($yesNoNumericSuffixField, [
+    'fecha_iso' => '2026-08-05',
+    'hielo_kolbitos_prueba' => 'Si',
+    'hielo_kolbitos_cantidad' => '3',
+]);
+test_assert_same(true, strpos(implode('', $yesNoNumericManyRows), '3 bolsas') !== false, 'yes_no numeric plural suffix');
+
+$currencyField = app_bitacora_field('number', 'valor_configurado', 'Valor configurado', [
+    'number_format' => 'currency',
+    'number_decimals' => 0,
+]);
+$currencyRows = bit_render_schema_field_rows($currencyField, [
+    'fecha_iso' => '2026-08-05',
+    'valor_configurado' => '123456',
+]);
+test_assert_same(true, strpos(implode('', $currencyRows), '$123.456') !== false, 'number currency rendered in PDF');
+
+$formattedGroupField = app_bitacora_yes_no_quantity_group_field(
+    'registros_formato',
+    '¿Hubo registros con formato?',
+    'registros_formato_cantidad',
+    'Cantidad de registros',
+    [
+        app_bitacora_field('number', 'valor', 'Valor', ['number_format' => 'currency']),
+        app_bitacora_field('number', 'unidades', 'Unidades', ['suffix' => 'unidades']),
+    ]
+);
+$formattedGroupItem = bit_render_group_item($formattedGroupField, 1, [
+    'registros_formato_1_valor' => '123456',
+    'registros_formato_1_unidades' => '3',
+]);
+test_assert_same(true, strpos($formattedGroupItem, '$123.456') !== false, 'number currency rendered in group item');
+test_assert_same(true, strpos($formattedGroupItem, '3 unidades') !== false, 'number suffix rendered in group item');
+
+$normalizedGroupField = app_bitacora_normalize_dynamic_field([
+    'type' => 'yes_no_quantity_group',
+    'name' => 'grupo_formato',
+    'label' => 'Grupo con formato',
+    'fields' => [[
+        'type' => 'number',
+        'name' => 'valor',
+        'label' => 'Valor',
+        'number_format' => 'currency',
+        'number_decimals' => 2,
+        'suffix' => 'COP',
+    ]],
+]);
+test_assert_same('currency', $normalizedGroupField['fields'][0]['number_format'] ?? null, 'group number format normalization');
+test_assert_same(2, $normalizedGroupField['fields'][0]['number_decimals'] ?? null, 'group number decimals normalization');
+test_assert_same('COP', $normalizedGroupField['fields'][0]['suffix'] ?? null, 'group number suffix normalization');
+
 $yesNoSedeField = app_bitacora_yes_no_field(
     'novedad_sede',
     '¿Hubo novedad?',
@@ -296,6 +449,31 @@ $quantityDefaultNoRows = bit_render_quantity_group(array_diff_key($quantityNoRep
     'visitas_prueba' => 'No',
 ]);
 test_assert_same(true, strpos(implode('', $quantityDefaultNoRows), 'Sin novedad') !== false, 'quantity group default no report value');
+
+$quantitySuffixField = app_bitacora_yes_no_quantity_group_field(
+    'visitas_con_unidades',
+    '¿Hubo visitas con unidades?',
+    'visitas_con_unidades_cantidad',
+    'Cantidad de visitas',
+    [['type' => 'text', 'name' => 'visitante', 'label' => 'Visitante']],
+    ['suffix' => 'unidades', 'suffix_singular' => 'unidad', 'suffix_plural' => 'unidades']
+);
+$normalizedQuantitySuffixField = app_bitacora_normalize_dynamic_field($quantitySuffixField);
+test_assert_same('unidades', $normalizedQuantitySuffixField['suffix'] ?? null, 'quantity group suffix normalization');
+test_assert_same('unidad', $normalizedQuantitySuffixField['suffix_singular'] ?? null, 'quantity group singular suffix normalization');
+test_assert_same('unidades', $normalizedQuantitySuffixField['suffix_plural'] ?? null, 'quantity group plural suffix normalization');
+$quantitySuffixRows = bit_render_quantity_group($quantitySuffixField, [
+    'fecha_iso' => '2026-08-05',
+    'visitas_con_unidades' => 'Si',
+    'visitas_con_unidades_cantidad' => '3',
+]);
+test_assert_same(true, strpos(implode('', $quantitySuffixRows), '3 unidades') !== false, 'quantity group suffix rendering');
+$quantitySingularRows = bit_render_quantity_group($quantitySuffixField, [
+    'fecha_iso' => '2026-08-05',
+    'visitas_con_unidades' => 'Si',
+    'visitas_con_unidades_cantidad' => '1',
+]);
+test_assert_same(true, strpos(implode('', $quantitySingularRows), '1 unidad') !== false, 'quantity group singular suffix rendering');
 
 $directQuantityField = app_bitacora_quantity_group_field(
     'incidentes_prueba',

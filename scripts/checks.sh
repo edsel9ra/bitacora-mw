@@ -19,13 +19,15 @@ if [ "$compose_file" = "docker-compose.prod.yml" ]; then
     compose run --rm --no-deps app sh -lc "find public database scripts tests -name '*.php' -print0 | xargs -0 -n1 php -l"
     compose run --rm --no-deps app php tests/run.php
     compose run --rm --no-deps app php tests/section_mail_privacy_test.php
-    compose run --rm app sh -lc "php database/migrate.php && php tests/integration.php"
+    compose run --rm app sh -lc "php database/migrate.php && php scripts/import_bitacora_recipients.php && php tests/integration.php"
+    compose run --rm app php tests/recipient_admin_integration.php
 else
     compose run --rm --no-deps app composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
     compose run --rm --no-deps app sh -lc "find public database scripts tests -name '*.php' -print0 | xargs -0 -n1 php -l"
     compose run --rm --no-deps app php tests/run.php
     compose run --rm --no-deps app php tests/section_mail_privacy_test.php
-    compose run --rm app sh -lc "php database/migrate.php && php tests/integration.php"
+    compose run --rm app sh -lc "php database/migrate.php && php scripts/import_bitacora_recipients.php && php tests/integration.php"
+    compose run --rm app php tests/recipient_admin_integration.php
     compose run --rm --no-deps app composer validate --strict
     compose run --rm --no-deps app composer audit
 fi
