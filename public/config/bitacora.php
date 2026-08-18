@@ -831,15 +831,15 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
             app_bitacora_field('select', 'comens1', 'AFLUENCIA TARDE', ['options' => $afluencia, 'col' => 'col-md-4']),
             app_bitacora_field('select', 'comens2', 'AFLUENCIA NOCHE', ['options' => $afluencia, 'col' => 'col-md-4']),
 
+            app_bitacora_subsection('indicadores', 'INDICADORES DE DESEMPEÑO', 'Ingrese los indicadores de desempeño durante la jornada'),
+            app_bitacora_field('number', 'pd', 'CUMPLIMIENTO PRESUPUESTO DIARIO', ['col' => 'col-md-3', 'suffix' => '%']),
+            app_bitacora_field('number', 'tp', 'TICKET PROMEDIO', ['col' => 'col-md-3', 'number_format' => 'currency', 'number_decimals' => 0]),
+
             app_bitacora_subsection('metricas_servicios', 'METRÍCAS DE SERVICIOS', 'Ingrese las métricas de servicios durante la jornada'),
             app_bitacora_field('number', 'rappi', 'NÚMERO DE ÓRDENES RAPPI', ['col' => 'col-md-3', 'suffix_singular' => ' orden', 'suffix_plural' => ' ordenes']),
             app_bitacora_field('number', 'domi', 'NÚMERO DE DOMICILIOS', ['col' => 'col-md-3', 'suffix_singular' => 'domicilio', 'suffix_plural' => 'domicilios']),
             app_bitacora_field('number', 'domiciliarios', 'DOMICILIARIOS', ['col' => 'col-md-3', 'suffix_singular' => 'domicilliario', 'suffix_plural' => 'domiciliarios']),
             app_bitacora_field('number', 'hdomi', 'HORAS EMPLEADAS DOMICILIARIOS', ['col' => 'col-md-3', 'suffix_singular' => 'hora', 'suffix_plural' => 'horas']),
-
-            app_bitacora_subsection('indicadores', 'INDICADORES DE DESEMPEÑO', 'Ingrese los indicadores de desempeño durante la jornada'),
-            app_bitacora_field('number', 'pd', 'CUMPLIMIENTO PRESUPUESTO DIARIO', ['col' => 'col-md-3', 'suffix' => '%']),
-            app_bitacora_field('number', 'tp', 'TICKET PROMEDIO', ['col' => 'col-md-3', 'number_format' => 'currency', 'number_decimals' => 0]),
         ]],
         ['key' => 'visitas_areas', 'title' => 'VISITAS DE ÁREAS', 'fields' => [
             app_bitacora_multiselect_detail_group_field(
