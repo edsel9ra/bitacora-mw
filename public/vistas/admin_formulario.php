@@ -497,14 +497,14 @@ if (($_GET['ajax'] ?? '') === '1') {
 
             <?php if ((string) ($baseFieldForm['type'] ?? '') === 'yes_no_quantity_group'): ?>
                 <div class="form-group">
-                    <label for="base_no_report_value">Texto en PDF/correo cuando la respuesta es No</label>
+                    <label for="base_no_report_value">Texto de referencia para respuestas No predeterminadas</label>
                     <input id="base_no_report_value" name="no_report_value" class="form-control" maxlength="500" value="<?php echo app_h((string) ($baseFieldForm['no_report_value'] ?? 'Sin novedad')); ?>">
                 </div>
             <?php endif; ?>
 
             <?php if ((string) ($baseFieldForm['type'] ?? '') === 'quantity_group'): ?>
                 <div class="form-group">
-                    <label for="base_zero_report_value">Texto en PDF/correo cuando la cantidad es 0</label>
+                    <label for="base_zero_report_value">Texto de referencia cuando la cantidad es 0</label>
                     <input id="base_zero_report_value" name="zero_report_value" class="form-control" maxlength="500" value="<?php echo app_h((string) ($baseFieldForm['zero_report_value'] ?? 'Sin registros')); ?>">
                 </div>
             <?php endif; ?>
@@ -701,11 +701,11 @@ if (($_GET['ajax'] ?? '') === '1') {
 
         <div data-type-panel="yes_no_quantity_group quantity_group">
             <div class="form-group" data-quantity-mode="yes_no_quantity_group">
-                <label for="no_report_value">Texto en PDF/correo cuando la respuesta es No</label>
+                <label for="no_report_value">Texto de referencia para respuestas No predeterminadas</label>
                 <input id="no_report_value" name="no_report_value" class="form-control" maxlength="500" value="<?php echo app_h((string) ($fieldForm['no_report_value'] ?? 'Sin novedad')); ?>" placeholder="Sin novedad">
             </div>
             <div class="form-group" data-quantity-mode="quantity_group">
-                <label for="zero_report_value">Texto en PDF/correo cuando la cantidad es 0</label>
+                <label for="zero_report_value">Texto de referencia cuando la cantidad es 0</label>
                 <input id="zero_report_value" name="zero_report_value" class="form-control" maxlength="500" value="<?php echo app_h((string) ($fieldForm['zero_report_value'] ?? 'Sin registros')); ?>" placeholder="Sin registros">
             </div>
             <div class="form-row">

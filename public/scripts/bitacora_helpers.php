@@ -201,9 +201,10 @@ function bit_calcular_minutos_planta(string $inicio = '', string $fin = ''): int
     return $diff;
 }
 
-function bit_handle_planta_electrica(array &$post, array $defaults): void
+function bit_handle_planta_electrica(array &$post, array $defaults): array
 {
     $planta = trim((string)($post['planta_elect'] ?? ''));
+    $defaultedFields = [];
 
     if ($planta === 'No') {
         if (!isset($post['mant5']) || trim((string)$post['mant5']) === '') {
@@ -218,7 +219,13 @@ function bit_handle_planta_electrica(array &$post, array $defaults): void
         if (!isset($post['mant8']) || trim((string)$post['mant8']) === '') {
             $post['mant8'] = $defaults['DEFAULT_PE'];
         }
-        return;
+
+        if (trim((string) ($post['novedades_planta'] ?? '')) === 'No'
+            && trim((string) ($post['mant8'] ?? '')) === trim((string) ($defaults['DEFAULT_PE'] ?? ''))) {
+            $defaultedFields[] = 'novedades_planta';
+        }
+
+        return $defaultedFields;
     }
 
     if ($planta === 'Si') {
@@ -231,6 +238,8 @@ function bit_handle_planta_electrica(array &$post, array $defaults): void
             $post['mant8'] = '';
         }
     }
+
+    return $defaultedFields;
 }
 
 function bit_get_config(int $empresaId, string $sede): array
@@ -254,20 +263,20 @@ function bit_get_conditional_rules(array $defaults): array
     return [
         ['radio' => 'visita_ss',         'field' => 'bpm1',    'default' => $defaults['DEFAULT_BPM']],
         ['radio' => 'visita_dagma',      'field' => 'bpm2',    'default' => $defaults['DEFAULT_BPM']],
-        ['radio' => 'visita_west',       'field' => 'bpm3',    'default' => $defaults['El dia de hoy no se recibio ninguna visita.']],
-        ['radio' => 'visita_cp',         'field' => 'bpm4',    'default' => $defaults['El dia de hoy no se fumigo.']],
-        ['radio' => 'visita_acu',        'field' => 'bpm5',    'default' => $defaults['El dia de hoy no se realizo ninguna entrega.']],
+        ['radio' => 'visita_west',       'field' => 'bpm3',    'default' => $defaults['DEFAULT_BPM']],
+        ['radio' => 'visita_cp',         'field' => 'bpm4',    'default' => $defaults['DEFAULT_BPM']],
+        ['radio' => 'visita_acu',        'field' => 'bpm5',    'default' => $defaults['DEFAULT_BPM']],
 
         ['radio' => 'equipos_ti',        'field' => 'ti',      'default' => $defaults['DEFAULT_TI']],
         ['radio' => 'facturas_ti',       'field' => 'ti1',     'default' => $defaults['DEFAULT_TI1']],
         ['radio' => 'novedades_ti',      'field' => 'ti2',     'default' => $defaults['DEFAULT_TI2']],
 
-        ['radio' => 'accidentes_sst',    'field' => 'sst1',    'default' => $defaults['Sin eventos para reportar.']],
-        ['radio' => 'incapacidades_sst', 'field' => 'sst2',    'default' => $defaults['Sin ningun caso para reportar.']],
+        ['radio' => 'accidentes_sst',    'field' => 'sst1',    'default' => $defaults['DEFAULT_SST']],
+        ['radio' => 'incapacidades_sst', 'field' => 'sst2',    'default' => $defaults['DEFAULT_SST']],
         ['radio' => 'ambiente_laboral',  'field' => 'sst3',    'default' => $defaults['DEFAULT_SST']],
         ['radio' => 'senal_sst',         'field' => 'sst4',    'default' => $defaults['DEFAULT_SST']],
         ['radio' => 'entrega_epp',       'field' => 'sst6',    'default' => $defaults['DEFAULT_SST']],
-        ['radio' => 'novedades_sst',     'field' => 'sst8',    'default' => $defaults['Sin novedades por reportar.']],
+        ['radio' => 'novedades_sst',     'field' => 'sst8',    'default' => $defaults['DEFAULT_SST']],
 
         ['radio' => 'hielo_enviado',     'field' => 'hielo4',  'default' => $defaults['DEFAULT_BH_ENVIADAS']],
         ['radio' => 'hielo_recibido',    'field' => 'hielo5',  'default' => $defaults['DEFAULT_BH_RECIBIDAS']],
@@ -279,20 +288,26 @@ function bit_get_conditional_rules(array $defaults): array
     ];
 }
 
-function bit_apply_conditional_defaults(array &$post, array $rules): void
+function bit_apply_conditional_defaults(array &$post, array $rules): array
 {
+    $defaultedFields = [];
+
     foreach ($rules as $rule) {
         $radio = trim((string)($post[$rule['radio']] ?? ''));
         $value = trim((string)($post[$rule['field']] ?? ''));
+        $default = trim((string)($rule['default'] ?? ''));
 
-        if ($radio === 'No' && $value === '') {
-            $post[$rule['field']] = $rule['default'];
+        if ($radio === 'No' && $value === '' && $default !== '') {
+            $post[$rule['field']] = $default;
+            $defaultedFields[] = (string) $rule['radio'];
         }
 
-        if ($radio === 'Si' && $value === $rule['default']) {
+        if ($radio === 'Si' && $default !== '' && $value === $default) {
             $post[$rule['field']] = '';
         }
     }
+
+    return array_values(array_unique($defaultedFields));
 }
 
 function bit_selected_values($value): array
@@ -417,6 +432,81 @@ function bit_render_detail(string $title, string $value, bool $mostrarSiVacio = 
     return '<div class="sub-item"><strong>' . bit_h($title) . ':</strong> ' . bit_e($value) . '</div>';
 }
 
+function bit_report_yes_no_is_silent(array $field, array $data, string $answer, string $detail = ''): bool
+{
+    if (trim($answer) !== 'No') {
+        return false;
+    }
+
+    if (trim($detail) === '') {
+        return true;
+    }
+
+    $name = (string) ($field['name'] ?? '');
+    return $name !== '' && in_array($name, (array) ($data['_conditional_default_fields'] ?? []), true);
+}
+
+function bit_report_rows_have_content(array $rows): bool
+{
+    foreach ($rows as $row) {
+        if (trim((string) $row) !== '') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function bit_render_report_blocks(array $fields, callable $renderField): array
+{
+    $blocks = [];
+    $pendingRows = [];
+    $rows = [];
+    $hasReportableRows = false;
+    $hasFieldsSinceMarker = false;
+
+    $flush = static function () use (&$blocks, &$pendingRows, &$rows, &$hasReportableRows, &$hasFieldsSinceMarker): void {
+        if ($hasReportableRows) {
+            $blocks[] = array_merge($pendingRows, $rows);
+        }
+
+        $pendingRows = [];
+        $rows = [];
+        $hasReportableRows = false;
+        $hasFieldsSinceMarker = false;
+    };
+
+    foreach ($fields as $field) {
+        $fieldRows = (array) $renderField($field);
+        if (app_bitacora_field_is_presentational($field)) {
+            if ($hasFieldsSinceMarker) {
+                $flush();
+            }
+            $pendingRows = array_merge($pendingRows, $fieldRows);
+            continue;
+        }
+
+        $hasFieldsSinceMarker = true;
+        if (bit_report_rows_have_content($fieldRows)) {
+            $hasReportableRows = true;
+        }
+        $rows = array_merge($rows, $fieldRows);
+    }
+
+    $flush();
+    return $blocks;
+}
+
+function bit_render_report_block(array $rows): string
+{
+    $rows = array_values(array_filter($rows, static fn($row) => trim((string) $row) !== ''));
+    if ($rows === []) {
+        return '';
+    }
+
+    return '<div class="report-block">' . implode('', $rows) . '</div>';
+}
+
 function bit_render_section(string $title, array $rows): string
 {
     $rows = array_filter($rows, function ($row) {
@@ -466,7 +556,12 @@ function bit_render_group_item(array $field, int $index, array $data): string
 
         $name = app_bitacora_group_item_field_name($groupName, $index, $itemFieldName);
         $label = (string) ($itemField['label'] ?? $itemFieldName);
-        $value = bit_report_display_value(bit_report_field_value($data[$name] ?? '', $itemField));
+        $rawValue = trim((string) ($data[$name] ?? ''));
+        if ((string) ($itemField['type'] ?? '') === 'simple_radio' && $rawValue === 'No') {
+            continue;
+        }
+
+        $value = bit_report_display_value(bit_report_field_value($rawValue, $itemField));
 
         if ($value !== '') {
             $rows[] = '<div class="sub-item"><strong>' . bit_h($label) . ':</strong> ' . bit_e($value) . '</div>';
@@ -477,7 +572,7 @@ function bit_render_group_item(array $field, int $index, array $data): string
         return '';
     }
 
-    return '<div class="sub-item"><strong>' . bit_h($itemLabel . ' ' . $index) . ':</strong><div style="margin-left:12px; margin-top:4px;">' . implode('', $rows) . '</div></div>';
+    return '<div class="sub-item report-record"><strong>' . bit_h($itemLabel . ' ' . $index) . ':</strong><div style="margin-left:12px; margin-top:4px;">' . implode('', $rows) . '</div></div>';
 }
 
 function bit_render_quantity_group(array $field, array $data): array
@@ -490,9 +585,11 @@ function bit_render_quantity_group(array $field, array $data): array
     $label = (string) ($field['label'] ?? $name);
     $quantityName = (string) ($field['quantity_name'] ?? ($name . '_cantidad'));
     $answer = trim((string) ($data[$name] ?? ''));
-    $renderAnswer = $answer === 'No'
-        ? bit_report_yes_no_value($answer, '', (string) ($field['no_report_value'] ?? ''))
-        : ($answer !== '' ? $answer : 'No diligenciado');
+    if ($answer === 'No') {
+        return [];
+    }
+
+    $renderAnswer = $answer !== '' ? $answer : 'No diligenciado';
     $rows = [bit_render_detail($label, $renderAnswer, true)];
 
     if ($answer !== 'Si') {
@@ -544,8 +641,7 @@ function bit_render_direct_quantity_group(array $field, array $data): array
     $max = max(1, min(10, (int) ($field['max'] ?? 10)));
     $quantity = max(0, min((int) $rawQuantity, $max));
     if ($quantity === 0) {
-        $zeroValue = trim((string) ($field['zero_report_value'] ?? '')) ?: 'Sin registros';
-        return [bit_render_detail($label, $zeroValue, true)];
+        return [];
     }
 
     $rows = [bit_render_detail($label, bit_report_field_value($quantity, [
@@ -571,9 +667,11 @@ function bit_render_detail_group(array $field, array $data): array
     $name = (string) ($field['name'] ?? '');
     $label = (string) ($field['label'] ?? $name);
     $answer = trim((string) ($data[$name] ?? ''));
-    $renderAnswer = $answer === 'No'
-        ? bit_report_yes_no_value($answer, '', (string) ($field['no_report_value'] ?? ''))
-        : ($answer !== '' ? $answer : 'No diligenciado');
+    if ($answer === 'No') {
+        return [];
+    }
+
+    $renderAnswer = $answer !== '' ? $answer : 'No diligenciado';
     $rows = [bit_render_detail($label, $renderAnswer, true)];
 
     if ($answer !== 'Si') {
@@ -605,7 +703,7 @@ function bit_render_multiselect_detail_group(array $field, array $data): array
     }
 
     if (!empty($groupData['no_apply'])) {
-        return [bit_render_detail($label, 'No se tuvieron visitas el dia de hoy.', true)];
+        return [];
     }
 
     $rows = [];
@@ -615,7 +713,7 @@ function bit_render_multiselect_detail_group(array $field, array $data): array
             continue;
         }
 
-        $rows[] = '<div class="sub-item"><strong>' . bit_h($visitor) . '</strong><div style="margin-left:12px; margin-top:4px;">' .
+        $rows[] = '<div class="sub-item report-visitor"><strong>' . bit_h($visitor) . '</strong><div style="margin-left:12px; margin-top:4px;">' .
             bit_render_detail('HORA INGRESO', (string) ($item['hora_inicio'] ?? '')) .
             bit_render_detail('HORA SALIDA', (string) ($item['hora_final'] ?? '')) .
             bit_render_detail('ACTIVIDADES REALIZADAS', (string) ($item['actividades'] ?? '')) .
@@ -656,6 +754,10 @@ function bit_render_schema_field_rows(array $field, array $data): array
     $label = (string) ($field['label'] ?? $name);
     if ($type === 'plant') {
         $answer = trim((string) ($data[$name] ?? ''));
+        if ($answer === 'No') {
+            return [];
+        }
+
         $rows = [bit_render_detail($label, $answer !== '' ? $answer : 'No diligenciado', true)];
         if ($answer === 'Si') {
             $rows[] = bit_render_detail('HORA ENCENDIDO', (string) ($data['mant5'] ?? ''));
@@ -675,6 +777,10 @@ function bit_render_schema_field_rows(array $field, array $data): array
         }
         $detailName = (string) ($field['detail_name'] ?? '');
         $detail = $detailName !== '' ? trim((string) ($data[$detailName] ?? '')) : '';
+        if (bit_report_yes_no_is_silent($field, $data, $value, $detail)) {
+            return [];
+        }
+
         $detail = bit_report_yes_no_detail_value($field, $detail);
         $value = bit_report_yes_no_value($value, $detail, (string) ($field['no_report_value'] ?? ''));
     }
@@ -683,7 +789,7 @@ function bit_render_schema_field_rows(array $field, array $data): array
     return [bit_render_detail($label, $value)];
 }
 
-function bit_render_schema_sections(array $sections, array $data, array $excludedKeys = [], array $excludedFieldNames = []): string
+function bit_render_schema_sections(array $sections, array $data, array $excludedKeys = [], array $excludedFieldNames = [], bool $preserveReportBlocks = false): string
 {
     $html = '';
     $excluded = array_flip($excludedKeys);
@@ -696,7 +802,7 @@ function bit_render_schema_sections(array $sections, array $data, array $exclude
             continue;
         }
 
-        $rows = [];
+        $visibleFields = [];
         foreach ((array) ($section['fields'] ?? []) as $field) {
             if (isset($excludedFields[(string) ($field['name'] ?? '')])) {
                 continue;
@@ -704,7 +810,29 @@ function bit_render_schema_sections(array $sections, array $data, array $exclude
             if (!app_bitacora_field_visible_for_sede($field, $sede)) {
                 continue;
             }
-            $rows = array_merge($rows, bit_render_schema_field_rows($field, $data));
+            $visibleFields[] = $field;
+        }
+
+        $blocks = bit_render_report_blocks(
+            $visibleFields,
+            static fn(array $field): array => bit_render_schema_field_rows($field, $data)
+        );
+        if ($blocks === []) {
+            continue;
+        }
+
+        $rows = [];
+        if ($preserveReportBlocks) {
+            foreach ($blocks as $blockRows) {
+                $block = bit_render_report_block($blockRows);
+                if ($block !== '') {
+                    $rows[] = $block;
+                }
+            }
+        } else {
+            foreach ($blocks as $blockRows) {
+                $rows = array_merge($rows, $blockRows);
+            }
         }
         $html .= bit_render_section((string) ($section['title'] ?? $sectionKey), $rows);
     }
@@ -716,6 +844,27 @@ function bit_render_html(array $data, array $config, bool $includeLogo = false):
 {
     $logoSrc = $includeLogo ? bit_pdf_logo_src() : '';
     $logoHtml = $logoSrc !== '' ? '<td class="logo-cell"><img class="logo" src="' . bit_h($logoSrc) . '" alt="Logo"></td>' : '';
+    $bodyMargin = $includeLogo ? '0' : '20px';
+    $headerMargin = $includeLogo ? '14px' : '20px';
+    $sectionMargin = $includeLogo ? '10px' : '14px';
+    $sectionPadding = $includeLogo ? '8px' : '10px';
+    $titleMargin = $includeLogo ? '6px' : '8px';
+    $subItemMargin = $includeLogo ? '4px' : '6px';
+    $lineHeight = $includeLogo ? '1.35' : '1.4';
+    $sectionBreakInside = $includeLogo ? 'auto' : 'avoid';
+    $titleBreakAfter = $includeLogo ? 'page-break-after: avoid; break-after: avoid;' : '';
+    $headerBreakInside = $includeLogo ? 'page-break-inside: avoid; break-inside: avoid;' : '';
+    $reportBlockCss = $includeLogo ? '
+            .report-block,
+            .report-record,
+            .report-visitor{
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .report-subsection{
+                margin: 8px 0 6px !important;
+            }
+' : '';
 
     $html = '
     <html>
@@ -726,12 +875,13 @@ function bit_render_html(array $data, array $config, bool $includeLogo = false):
                 font-family: DejaVu Sans, Arial, sans-serif;
                 font-size: 14px;
                 color: #222;
-                margin: 20px;
+                margin: ' . $bodyMargin . ';
             }
             .header{
                 border-bottom: 2px solid #8B1E1E;
                 padding-bottom: 10px;
-                margin-bottom: 20px;
+                margin-bottom: ' . $headerMargin . ';
+                ' . $headerBreakInside . '
             }
             .header-table{
                 width: 100%;
@@ -759,22 +909,25 @@ function bit_render_html(array $data, array $config, bool $includeLogo = false):
                 margin-bottom: 3px;
             }
             .area-section{
-                margin-bottom: 14px;
+                margin-bottom: ' . $sectionMargin . ';
                 border: 1px solid #ddd;
                 border-radius: 6px;
-                padding: 10px;
-                page-break-inside: avoid;
+                padding: ' . $sectionPadding . ';
+                page-break-inside: ' . $sectionBreakInside . ';
+                break-inside: ' . $sectionBreakInside . ';
             }
             .area-title{
                 font-size: 16px;
                 font-weight: bold;
-                margin-bottom: 8px;
+                margin-bottom: ' . $titleMargin . ';
                 color: #8B1E1E;
+                ' . $titleBreakAfter . '
             }
             .sub-item{
-                margin-bottom: 6px;
-                line-height: 1.4;
+                margin-bottom: ' . $subItemMargin . ';
+                line-height: ' . $lineHeight . ';
             }
+            ' . $reportBlockCss . '
         </style>
     </head>
     <body>
@@ -787,7 +940,7 @@ function bit_render_html(array $data, array $config, bool $includeLogo = false):
             </td></tr></table>
         </div>';
 
-    $html .= bit_render_schema_sections((array) ($config['form_sections'] ?? []), $data, [], ['fechab', 'sede', 'responsable', 'cargo']);
+    $html .= bit_render_schema_sections((array) ($config['form_sections'] ?? []), $data, [], ['fechab', 'sede', 'responsable', 'cargo'], $includeLogo);
     return $html . '</body></html>';
 
 }

@@ -478,10 +478,14 @@ function bit_handle_operational(int $empresaId, ?array $draftContext = null): vo
         bit_json_response(false, $visitMessage);
     }
 
-    bit_apply_conditional_defaults($_POST, $rules);
-    bit_handle_planta_electrica($_POST, $defaults);
+    $conditionalDefaultFields = bit_apply_conditional_defaults($_POST, $rules);
+    $conditionalDefaultFields = array_values(array_unique(array_merge(
+        $conditionalDefaultFields,
+        bit_handle_planta_electrica($_POST, $defaults)
+    )));
 
     $data = bit_normalize_data($_POST, $config);
+    $data['_conditional_default_fields'] = $conditionalDefaultFields;
     $html = bit_render_html($data, $config);
     $pdfHtml = bit_render_html($data, $config, true);
     $subject = 'BITÁCORA SEDE ' . preg_replace('/[\r\n]+/', ' ', (string) ($data['sede'] ?? ''));

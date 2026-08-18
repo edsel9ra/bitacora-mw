@@ -98,6 +98,10 @@ foreach (['casos_ti', 'casos_sst', 'equipos_cocina', 'equipos_bar', 'equipos_sal
 }
 $novedadesSstRule = array_values(array_filter($conditionalRules, static fn($rule) => ($rule['radio'] ?? '') === 'novedades_sst'));
 test_assert_same('sst8', $novedadesSstRule[0]['field'] ?? null, 'current SST detail field');
+$defaultedConditionalPost = ['visita_west' => 'No'];
+$defaultedConditionalFields = bit_apply_conditional_defaults($defaultedConditionalPost, $conditionalRules);
+test_assert_same(['visita_west'], $defaultedConditionalFields, 'conditional default tracks source field');
+test_assert_same($defaultTexts['DEFAULT_BPM'], $defaultedConditionalPost['bpm3'] ?? null, 'conditional default uses configured text');
 
 $subsection = app_bitacora_normalize_dynamic_field([
     'type' => 'subsection',
@@ -164,6 +168,208 @@ test_assert_same(true, strpos($reportHtml, 'Describe el estado.<br') !== false, 
 test_assert_same(true, strpos($reportHtml, 'Estado:</strong> Sin novedad') !== false, 'PDF report exact No value');
 test_assert_same(true, strpos($reportHtml, '¿Se ha enviado hielo?:</strong> No se enviaron bolsas a otras sedes') !== false, 'PDF negative answer uses detail only');
 test_assert_same(false, strpos($reportHtml, '¿Se ha enviado hielo?:</strong> No. ') !== false, 'PDF negative answer has no No prefix');
+$reportPdfHtml = bit_render_html([
+    'sede' => 'PANCE',
+    'fecha' => '05-08-2026',
+    'fecha_iso' => '2026-08-05',
+    'responsable' => 'Prueba',
+    'cargo' => 'Pruebas',
+    'antes' => 'Valor anterior',
+    'estado' => 'No',
+    'hielo_enviado' => 'No',
+    'hielo_enviado_detalle' => 'No se enviaron bolsas a otras sedes',
+    'despues' => 'Valor posterior',
+], [
+    'form_sections' => $reportSections,
+], true);
+test_assert_same(true, strpos($reportPdfHtml, 'margin: 0;') !== false, 'PDF removes duplicate body margin');
+test_assert_same(true, strpos($reportPdfHtml, 'page-break-inside: auto;') !== false, 'PDF allows sections to split');
+test_assert_same(true, strpos($reportPdfHtml, 'page-break-after: avoid;') !== false, 'PDF keeps section title with content');
+test_assert_same(true, substr_count($reportPdfHtml, 'class="report-block"') >= 2, 'PDF preserves logical report blocks');
+
+$humanReportSections = [[
+    'key' => 'gestion_humana',
+    'title' => 'GESTIÓN HUMANA',
+    'fields' => [
+        app_bitacora_yes_no_quantity_group_field(
+            'gh_vacantes_abiertas',
+            '¿SE CUENTA CON VACANTES ABIERTAS ACTUALMENTE?',
+            'gh_vacantes_cantidad',
+            'Cantidad',
+            [['type' => 'text', 'name' => 'cargo', 'label' => 'Cargo']],
+            ['no_report_value' => 'No se tienen vacantes pendientes.']
+        ),
+        app_bitacora_yes_no_quantity_group_field(
+            'gh_vacaciones',
+            '¿HAY NOVEDADES DEL PERSONAL POR VACACIONES?',
+            'gh_vacaciones_cantidad',
+            'Cantidad',
+            [['type' => 'text', 'name' => 'colaborador', 'label' => 'Colaborador']],
+            ['no_report_value' => 'Sin novedad alguna.']
+        ),
+        app_bitacora_yes_no_detail_group_field(
+            'gh_reingreso_vacaciones',
+            '¿HUBO REINGRESO DEL PERSONAL EN VACACIONES?',
+            [['type' => 'text', 'name' => 'colaborador', 'label' => 'Colaborador']],
+            ['no_report_value' => 'No se presento ningun reingreso.']
+        ),
+        app_bitacora_yes_no_quantity_group_field(
+            'gh_ingreso_personal',
+            '¿HUBO INGRESO DE PERSONAL NUEVO?',
+            'gh_ingreso_personal_cantidad',
+            'Cantidad',
+            [['type' => 'text', 'name' => 'colaborador', 'label' => 'Colaborador']],
+            ['no_report_value' => 'No por el dia de hoy.']
+        ),
+    ],
+]];
+$humanReportHtml = bit_render_html([
+    'sede' => 'PANCE',
+    'fecha' => '05-08-2026',
+    'fecha_iso' => '2026-08-05',
+    'responsable' => 'Prueba',
+    'cargo' => 'Pruebas',
+    'gh_vacantes_abiertas' => 'No',
+    'gh_vacaciones' => 'No',
+    'gh_reingreso_vacaciones' => 'No',
+    'gh_ingreso_personal' => 'No',
+], ['form_sections' => $humanReportSections]);
+test_assert_same(false, strpos($humanReportHtml, 'GESTIÓN HUMANA') !== false, 'section with only default No answers is omitted');
+test_assert_same(false, strpos($humanReportHtml, 'No se tienen vacantes pendientes.') !== false, 'default No text is omitted');
+
+$improvementReportSections = [[
+    'key' => 'mejoramiento',
+    'title' => 'MEJORAMIENTO Y ESTANDARIZACIÓN (CALIDAD Y AMBIENTAL)',
+    'fields' => [
+        app_bitacora_yes_no_field('visita_ss', '¿HUBO VISITA DE LA SECRETARÍA DE SALUD?', 'visitaSsGroup', 'bpm1', 'Detalle', 'textarea', ['no_report_value' => 'No se recibio ninguna visita.']),
+        app_bitacora_yes_no_field('visita_dagma', '¿HUBO VISITA DEL DAGMA?', 'visitaDagmaGroup', 'bpm2', 'Detalle', 'textarea', ['no_report_value' => 'No se recibio ninguna visita.']),
+        app_bitacora_yes_no_field('visita_west', '¿HUBO VISITA DEL PROVEEDOR WEST QUIMICA?', 'visitaWestGroup', 'bpm3', 'Detalle', 'textarea', ['no_report_value' => 'El dia de hoy no se recibio ninguna visita.']),
+        app_bitacora_yes_no_field('visita_cp', '¿HUBO VISITA DEL PROVEEDOR DE CONTROL DE PLAGAS?', 'visitaCpGroup', 'bpm4', 'Detalle', 'textarea', ['no_report_value' => 'El dia de hoy no se fumigo.']),
+        app_bitacora_yes_no_field('visita_acu', '¿HUBO VISITA DEL PROVEEDOR QUE RECOGE EL ACU?', 'visitaAcuGroup', 'bpm5', 'Detalle', 'textarea', ['no_report_value' => 'El dia de hoy no se realizo ninguna entrega.']),
+    ],
+]];
+$improvementReportHtml = bit_render_html([
+    'sede' => 'PANCE',
+    'fecha' => '05-08-2026',
+    'fecha_iso' => '2026-08-05',
+    'responsable' => 'Prueba',
+    'cargo' => 'Pruebas',
+    'visita_ss' => 'No',
+    'bpm1' => 'No se recibio ninguna visita.',
+    'visita_dagma' => 'No',
+    'bpm2' => 'No se recibio ninguna visita.',
+    'visita_west' => 'No',
+    'bpm3' => 'El dia de hoy no se recibio ninguna visita.',
+    'visita_cp' => 'No',
+    'bpm4' => 'El dia de hoy no se fumigo.',
+    'visita_acu' => 'Si',
+    'bpm5' => 'se llevan 5 bidones, 8 kilos, no dejan recomendaciones',
+    '_conditional_default_fields' => ['visita_ss', 'visita_dagma', 'visita_west', 'visita_cp'],
+], ['form_sections' => $improvementReportSections]);
+test_assert_same(true, strpos($improvementReportHtml, 'MEJORAMIENTO Y ESTANDARIZACIÓN (CALIDAD Y AMBIENTAL)') !== false, 'section with a positive answer is retained');
+test_assert_same(true, strpos($improvementReportHtml, '¿HUBO VISITA DEL PROVEEDOR QUE RECOGE EL ACU?') !== false, 'positive conditional question is retained');
+test_assert_same(true, strpos($improvementReportHtml, 'Si. se llevan 5 bidones, 8 kilos, no dejan recomendaciones') !== false, 'positive conditional detail is retained');
+test_assert_same(false, strpos($improvementReportHtml, 'No se recibio ninguna visita.') !== false, 'default No rows are omitted from mixed section');
+test_assert_same(false, strpos($improvementReportHtml, 'No se fumigo.') !== false, 'default No rows are omitted from mixed section');
+
+$noApplyField = app_bitacora_multiselect_detail_group_field(
+    'visitas_sin_aplicar',
+    'INGRESE LAS PERSONAS DE LAS DISTINTAS ÁREAS QUE VISITARON LA SEDE',
+    ['No se tuvieron visitas el dia de hoy' => 'No se tuvieron visitas el dia de hoy']
+);
+$noApplyRows = bit_render_multiselect_detail_group($noApplyField, [
+    '_multiselect_detail_groups' => [
+        'visitas_sin_aplicar' => ['no_apply' => true, 'items' => []],
+    ],
+]);
+test_assert_same([], $noApplyRows, 'no-apply visits are omitted from report');
+$visitorField = app_bitacora_multiselect_detail_group_field(
+    'visitas_con_detalle',
+    'VISITAS CON DETALLE',
+    ['Área técnica' => 'Área técnica']
+);
+$visitorRows = bit_render_multiselect_detail_group($visitorField, [
+    '_multiselect_detail_groups' => [
+        'visitas_con_detalle' => [
+            'no_apply' => false,
+            'items' => [[
+                'visitante' => 'Área técnica',
+                'hora_inicio' => '08:00',
+                'hora_final' => '09:00',
+                'actividades' => 'Actividad de prueba',
+            ]],
+        ],
+    ],
+]);
+test_assert_same(true, strpos(implode('', $visitorRows), 'report-visitor') !== false, 'PDF protects each visitor block');
+$emptyDirectQuantityField = app_bitacora_quantity_group_field(
+    'actividades_sin_datos',
+    'ACTIVIDADES/CAMPAÑAS',
+    'actividades_sin_datos_cantidad',
+    'Cantidad',
+    [['type' => 'text', 'name' => 'actividad', 'label' => 'Actividad']],
+    ['zero_report_value' => 'No se realizaron actividades.']
+);
+$emptyDefaultSections = [[
+    'key' => 'defaults',
+    'title' => 'DEFAULTS',
+    'fields' => [$noApplyField, $emptyDirectQuantityField],
+]];
+$emptyDefaultHtml = bit_render_html([
+    'sede' => 'PANCE',
+    'fecha' => '05-08-2026',
+    'fecha_iso' => '2026-08-05',
+    'responsable' => 'Prueba',
+    'cargo' => 'Pruebas',
+    '_multiselect_detail_groups' => [
+        'visitas_sin_aplicar' => ['no_apply' => true, 'items' => []],
+    ],
+    'actividades_sin_datos_cantidad' => '0',
+], ['form_sections' => $emptyDefaultSections]);
+test_assert_same(false, strpos($emptyDefaultHtml, 'DEFAULTS') !== false, 'section with no-apply and zero defaults is omitted');
+
+$plantPost = ['planta_elect' => 'No', 'novedades_planta' => 'No'];
+$plantDefaultFields = bit_handle_planta_electrica($plantPost, $defaultTexts);
+test_assert_same(true, in_array('novedades_planta', $plantDefaultFields, true), 'plant default tracks No detail source');
+$plantNoField = app_bitacora_yes_no_field(
+    'novedades_planta',
+    'NOVEDADES DE PLANTA ELÉCTRICA',
+    'mant8Group',
+    'mant8',
+    'Detalle',
+    'textarea'
+);
+test_assert_same([], bit_render_schema_field_rows($plantNoField, [
+    'fecha_iso' => '2026-08-05',
+    'novedades_planta' => 'No',
+    'mant8' => $plantPost['mant8'],
+    '_conditional_default_fields' => $plantDefaultFields,
+]), 'plant-generated No detail is omitted from report');
+
+$subsectionBlockSections = [[
+    'key' => 'operaciones_bloques',
+    'title' => 'OPERACIONES',
+    'fields' => [
+        app_bitacora_subsection('bloque_sin_datos', 'OBSERVACIONES SIN DATOS', 'Esta subsección no debe aparecer.'),
+        app_bitacora_yes_no_field('bloque_no', 'NOVEDAD DEL BLOQUE', 'bloqueNoGroup', 'bloque_no_detalle', 'Detalle', 'textarea', ['no_report_value' => 'Sin novedades.']),
+        app_bitacora_subsection('bloque_con_datos', 'OBSERVACIONES CON DATOS', 'Esta subsección sí debe aparecer.'),
+        app_bitacora_yes_no_field('planillas_bloque', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', 'planillasBloqueGroup', 'planillas_bloque_detalle', 'Detalle', 'textarea', ['no_report_value' => 'No se diligenciaron formatos.']),
+    ],
+]];
+$subsectionBlockHtml = bit_render_html([
+    'sede' => 'PANCE',
+    'fecha' => '05-08-2026',
+    'fecha_iso' => '2026-08-05',
+    'responsable' => 'Prueba',
+    'cargo' => 'Pruebas',
+    'bloque_no' => 'No',
+    'planillas_bloque' => 'Si',
+    'planillas_bloque_detalle' => 'check list',
+], ['form_sections' => $subsectionBlockSections]);
+test_assert_same(false, strpos($subsectionBlockHtml, 'OBSERVACIONES SIN DATOS') !== false, 'empty subsection is omitted');
+test_assert_same(false, strpos($subsectionBlockHtml, 'Esta subsección no debe aparecer.') !== false, 'empty subsection description is omitted');
+test_assert_same(true, strpos($subsectionBlockHtml, 'OBSERVACIONES CON DATOS') !== false, 'subsection with reportable data is retained');
+test_assert_same(true, strpos($subsectionBlockHtml, 'Si. check list') !== false, 'subsection positive detail is retained');
 
 $schemaOnlyHtml = bit_render_html([
     'sede' => 'PANCE',
@@ -227,7 +433,7 @@ $yesNoNoReportRows = bit_render_schema_field_rows($yesNoNoReportField, [
     'fecha_iso' => '2026-08-05',
     'novedad_configurada' => 'No',
 ]);
-test_assert_same(true, strpos(implode('', $yesNoNoReportRows), 'No hubo novedades configuradas') !== false, 'yes_no custom no report value rendering');
+test_assert_same([], $yesNoNoReportRows, 'yes_no default No is omitted from report');
 
 $yesNoDetailNoReportField = app_bitacora_yes_no_detail_group_field(
     'material_configurado',
@@ -240,7 +446,7 @@ $yesNoDetailNoReportRows = bit_render_detail_group($yesNoDetailNoReportField, [
     'fecha_iso' => '2026-08-05',
     'material_configurado' => 'No',
 ]);
-test_assert_same(true, strpos(implode('', $yesNoDetailNoReportRows), 'No se entregó material configurado') !== false, 'yes_no detail group custom no report value rendering');
+test_assert_same([], $yesNoDetailNoReportRows, 'yes_no detail group default No is omitted from report');
 $yesNoDetailDefaultRows = bit_render_detail_group(
     app_bitacora_yes_no_detail_group_field(
         'material_sin_configurar',
@@ -252,7 +458,7 @@ $yesNoDetailDefaultRows = bit_render_detail_group(
         'material_sin_configurar' => 'No',
     ]
 );
-test_assert_same(true, strpos(implode('', $yesNoDetailDefaultRows), 'Sin novedad') !== false, 'yes_no detail group default no report value rendering');
+test_assert_same([], $yesNoDetailDefaultRows, 'yes_no detail group default No is omitted from report');
 
 $yesNoNumericSuffixField = app_bitacora_yes_no_field(
     'hielo_kolbitos_prueba',
@@ -271,9 +477,7 @@ $yesNoNumericNoRows = bit_render_schema_field_rows($yesNoNumericSuffixField, [
     'fecha_iso' => '2026-08-05',
     'hielo_kolbitos_prueba' => 'No',
 ]);
-$yesNoNumericNoHtml = implode('', $yesNoNumericNoRows);
-test_assert_same(true, strpos($yesNoNumericNoHtml, 'No se realizó compra de hielo.') !== false, 'yes_no numeric custom No report value');
-test_assert_same(false, strpos($yesNoNumericNoHtml, 'bolsas') !== false, 'yes_no numeric No report value has no suffix');
+test_assert_same([], $yesNoNumericNoRows, 'yes_no numeric default No is omitted from report');
 $yesNoNumericOneRows = bit_render_schema_field_rows($yesNoNumericSuffixField, [
     'fecha_iso' => '2026-08-05',
     'hielo_kolbitos_prueba' => 'Si',
@@ -427,7 +631,7 @@ test_assert_same('Si', $draftRadioPayload['reservas_1_decoracion_reserva'] ?? nu
 $reservationReportItem = bit_render_group_item($reservationsField, 1, ['reservas_1_decoracion_reserva' => 'Si']);
 test_assert_same(true, strpos($reservationReportItem, 'DECORACIÓN') !== false && strpos($reservationReportItem, 'Si') !== false, 'nested simple radio report');
 $reservationNoReportItem = bit_render_group_item($reservationsField, 1, ['reservas_1_decoracion_reserva' => 'No']);
-test_assert_same(true, strpos($reservationNoReportItem, 'Sin novedad') !== false, 'nested exact No report');
+test_assert_same('', $reservationNoReportItem, 'nested exact No is omitted from report');
 
 $quantityNoReportField = app_bitacora_yes_no_quantity_group_field(
     'visitas_prueba',
@@ -443,12 +647,12 @@ $quantityNoRows = bit_render_quantity_group($quantityNoReportField, [
     'fecha_iso' => '2026-08-05',
     'visitas_prueba' => 'No',
 ]);
-test_assert_same(true, strpos(implode('', $quantityNoRows), 'No se recibieron visitas') !== false, 'quantity group custom no report value');
+test_assert_same([], $quantityNoRows, 'quantity group default No is omitted from report');
 $quantityDefaultNoRows = bit_render_quantity_group(array_diff_key($quantityNoReportField, ['no_report_value' => true]), [
     'fecha_iso' => '2026-08-05',
     'visitas_prueba' => 'No',
 ]);
-test_assert_same(true, strpos(implode('', $quantityDefaultNoRows), 'Sin novedad') !== false, 'quantity group default no report value');
+test_assert_same([], $quantityDefaultNoRows, 'quantity group default No is omitted from report');
 
 $quantitySuffixField = app_bitacora_yes_no_quantity_group_field(
     'visitas_con_unidades',
@@ -518,7 +722,7 @@ test_assert_same([true, ''], bit_validate_direct_quantity_groups([$directQuantit
 $_POST = ['incidentes_prueba_cantidad' => '1'];
 test_assert_same(false, bit_validate_direct_quantity_groups([$directQuantityField], '2026-08-05')[0], 'direct quantity validation requires visible row fields');
 $directZeroRows = bit_render_direct_quantity_group($directQuantityField, ['fecha_iso' => '2026-08-05', 'incidentes_prueba_cantidad' => '0']);
-test_assert_same(true, strpos(implode('', $directZeroRows), 'No se presentaron incidentes') !== false, 'direct quantity report uses zero text');
+test_assert_same([], $directZeroRows, 'direct quantity zero default is omitted from report');
 $directPositiveRows = bit_render_direct_quantity_group($directQuantityField, [
     'fecha_iso' => '2026-08-05',
     'incidentes_prueba_cantidad' => '1',

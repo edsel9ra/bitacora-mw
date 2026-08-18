@@ -64,6 +64,10 @@ function bit_section_email_rows_for_field(array $field, array $data): array
     $label = (string) ($field['label'] ?? $name);
     if ($type === 'plant') {
         $answer = trim((string) ($data[$name] ?? ''));
+        if ($answer === 'No') {
+            return [];
+        }
+
         $rows = [bit_render_detail($label, $answer !== '' ? $answer : 'No diligenciado', true)];
         if ($answer === 'Si') {
             $rows[] = bit_render_detail('Hora encendido', (string) ($data['mant5'] ?? ''));
@@ -82,6 +86,10 @@ function bit_section_email_rows_for_field(array $field, array $data): array
 
         $detailName = (string) ($field['detail_name'] ?? '');
         $detail = $detailName !== '' ? trim((string) ($data[$detailName] ?? '')) : '';
+        if (bit_report_yes_no_is_silent($field, $data, $answer, $detail)) {
+            return [];
+        }
+
         $detail = bit_report_yes_no_detail_value($field, $detail);
         $value = bit_report_yes_no_value($answer, $detail, (string) ($field['no_report_value'] ?? ''));
         return [bit_render_detail($label, bit_report_field_value($value, $field), true)];
@@ -130,15 +138,27 @@ function bit_render_assigned_sections_body(array $sections, array $data, array $
             continue;
         }
 
-        $rows = [];
+        $visibleFields = [];
         foreach ((array) ($section['fields'] ?? []) as $field) {
             if (!app_bitacora_field_visible_for_sede($field, $sede)) {
                 continue;
             }
 
-            $rows = array_merge($rows, bit_section_email_rows_for_field($field, $data));
+            $visibleFields[] = $field;
         }
 
+        $blocks = bit_render_report_blocks(
+            $visibleFields,
+            static fn(array $field): array => bit_section_email_rows_for_field($field, $data)
+        );
+        if ($blocks === []) {
+            continue;
+        }
+
+        $rows = [];
+        foreach ($blocks as $blockRows) {
+            $rows = array_merge($rows, $blockRows);
+        }
         $sectionHtml = bit_render_section((string) ($section['title'] ?? $sectionKey), $rows);
         if ($sectionHtml !== '') {
             $body .= $sectionHtml;
@@ -160,21 +180,27 @@ function bit_render_supervision_body(array $sections, array $data): string
     };
 
     $body = '<h2>Información de Supervisión</h2>';
+    $renderedSections = 0;
     $sede = (string) ($data['sede'] ?? '');
     foreach ($sections as $section) {
-        $rows = '';
+        $visibleFields = [];
         foreach ((array) ($section['fields'] ?? []) as $field) {
             if (!app_bitacora_field_visible_for_sede($field, $sede)) {
                 continue;
             }
 
+            $visibleFields[] = $field;
+        }
+
+        $blocks = bit_render_report_blocks(
+            $visibleFields,
+            static function (array $field) use ($data, $e): array {
             $name = (string) ($field['name'] ?? '');
             if (app_bitacora_field_is_presentational($field)) {
-                $rows .= '<li style="list-style:none;margin-left:-20px;">' . bit_render_subsection($field) . '</li>';
-                continue;
+                return ['<li style="list-style:none;margin-left:-20px;">' . bit_render_subsection($field) . '</li>'];
             }
             if ($name === '') {
-                continue;
+                return [];
             }
 
             $type = (string) ($field['type'] ?? 'text');
@@ -189,17 +215,23 @@ function bit_render_supervision_body(array $sections, array $data): string
                 } else {
                     $groupRows = bit_render_multiselect_detail_group($field, $data);
                 }
-                foreach ($groupRows as $groupRow) {
-                    $rows .= '<li>' . $groupRow . '</li>';
-                }
-                continue;
+                $groupRows = array_values(array_filter($groupRows, static fn($row) => trim((string) $row) !== ''));
+                return array_map(static fn($groupRow) => '<li>' . $groupRow . '</li>', $groupRows);
             }
 
             $label = (string) ($field['label'] ?? $name);
             $value = trim((string) ($data[$name] ?? ''));
-            if ($type === 'yes_no') {
+            if ($type === 'yes_no' || $type === 'simple_radio') {
+                if ($value === '') {
+                    return [];
+                }
+
                 $detailName = (string) ($field['detail_name'] ?? '');
                 $detail = $detailName !== '' ? trim((string) ($data[$detailName] ?? '')) : '';
+                if (bit_report_yes_no_is_silent($field, $data, $value, $detail)) {
+                    return [];
+                }
+
                 $detail = bit_report_yes_no_detail_value($field, $detail);
                 $value = bit_report_yes_no_value($value, $detail, (string) ($field['no_report_value'] ?? ''));
             }
@@ -207,18 +239,26 @@ function bit_render_supervision_body(array $sections, array $data): string
             $value = bit_report_display_value(bit_report_field_value($value, $field));
 
             if ($value === '') {
-                continue;
+                return [];
             }
 
-            $rows .= '<li><strong>' . $e($label) . ': </strong>' . $e($value) . '</li>';
+            return ['<li><strong>' . $e($label) . ': </strong>' . $e($value) . '</li>'];
+            }
+        );
+
+        if ($blocks === []) {
+            continue;
         }
 
-        if ($rows !== '') {
-            $body .= '<h3>' . $e((string) ($section['title'] ?? 'Sección')) . '</h3><ul>' . $rows . '</ul>';
+        $rows = [];
+        foreach ($blocks as $blockRows) {
+            $rows = array_merge($rows, $blockRows);
         }
+        $body .= '<h3>' . $e((string) ($section['title'] ?? 'Sección')) . '</h3><ul>' . implode('', $rows) . '</ul>';
+        $renderedSections++;
     }
 
-    return $body;
+    return $renderedSections > 0 ? $body : '';
 }
 
 function bit_send_section_emails(int $empresaId, string $sede, array $data, array $sections, array $fullRecipients, string $subject): int

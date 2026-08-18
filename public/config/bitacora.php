@@ -824,6 +824,23 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
             app_bitacora_field('text', 'responsable', 'Responsable', ['col' => 'col-md-6']),
             app_bitacora_field('select', 'cargo', 'Cargo', ['options' => ['Coordinador/a', 'Cajero/a', 'Jefe/a de área'], 'col' => 'col-md-6']),
         ]],
+        // Alfuencia, metricas e indicadores ()
+        ['key' => 'desempenio', 'title' => 'DESEMPEÑO DE LA SEDE', 'fields' => [
+            app_bitacora_subsection('afluencia', 'AFLUENCIA DE COMENSALES', 'Ingrese la afluencia de comensales durante la jornada'),
+            app_bitacora_field('select', 'comens', 'AFLUENCIA MEDIO DÍA', ['options' => $afluencia, 'col' => 'col-md-4']),
+            app_bitacora_field('select', 'comens1', 'AFLUENCIA TARDE', ['options' => $afluencia, 'col' => 'col-md-4']),
+            app_bitacora_field('select', 'comens2', 'AFLUENCIA NOCHE', ['options' => $afluencia, 'col' => 'col-md-4']),
+
+            app_bitacora_subsection('metricas_servicios', 'METRÍCAS DE SERVICIOS', 'Ingrese las métricas de servicios durante la jornada'),
+            app_bitacora_field('number', 'rappi', 'NÚMERO DE ÓRDENES RAPPI', ['col' => 'col-md-3', 'suffix_singular' => ' orden', 'suffix_plural' => ' ordenes']),
+            app_bitacora_field('number', 'domi', 'NÚMERO DE DOMICILIOS', ['col' => 'col-md-3', 'suffix_singular' => 'domicilio', 'suffix_plural' => 'domicilios']),
+            app_bitacora_field('number', 'domiciliarios', 'DOMICILIARIOS', ['col' => 'col-md-3', 'suffix_singular' => 'domicilliario', 'suffix_plural' => 'domiciliarios']),
+            app_bitacora_field('number', 'hdomi', 'HORAS EMPLEADAS DOMICILIARIOS', ['col' => 'col-md-3', 'suffix_singular' => 'hora', 'suffix_plural' => 'horas']),
+
+            app_bitacora_subsection('indicadores', 'INDICADORES DE DESEMPEÑO', 'Ingrese los indicadores de desempeño durante la jornada'),
+            app_bitacora_field('number', 'pd', 'CUMPLIMIENTO PRESUPUESTO DIARIO', ['col' => 'col-md-3', 'suffix' => '%']),
+            app_bitacora_field('number', 'tp', 'TICKET PROMEDIO', ['col' => 'col-md-3', 'number_format' => 'currency', 'number_decimals' => 0]),
+        ]],
         ['key' => 'visitas_areas', 'title' => 'VISITAS DE ÁREAS', 'fields' => [
             app_bitacora_multiselect_detail_group_field(
                 'visitas_areas',
@@ -915,28 +932,12 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                 ], ['item_label' => 'RESERVA #', 'order' => 0, 'no_report_value' => 'No se recibieron reservas el dia de hoy.']
             ),
 
-            app_bitacora_subsection('afluencia', 'AFLUENCIA DE COMENSALES', 'Ingrese la afluencia de comensales durante la jornada'),
-            app_bitacora_field('select', 'comens', 'AFLUENCIA MEDIO DÍA', ['options' => $afluencia, 'col' => 'col-md-4']),
-            app_bitacora_field('select', 'comens1', 'AFLUENCIA TARDE', ['options' => $afluencia, 'col' => 'col-md-4']),
-            app_bitacora_field('select', 'comens2', 'AFLUENCIA NOCHE', ['options' => $afluencia, 'col' => 'col-md-4']),
-
             app_bitacora_subsection('domicilios', 'NOVEDADES DOMICILIOS', 'Ingrese las novedades de domicilios durante la jornada'),
-            app_bitacora_field('textarea', 'dorp', 'NOVEDADES CON RAPPI', ['col' => 'col-md-6']),
-            app_bitacora_field('textarea', 'domp', 'NOVEDADES CON DOMICILIOS PROPIOS', ['col' => 'col-md-6']),
-
-            app_bitacora_subsection('metricas_servicios', 'METRÍCAS DE SERVICIOS', 'Ingrese las métricas de servicios durante la jornada'),
-            app_bitacora_field('number', 'rappi', 'NÚMERO DE ÓRDENES RAPPI', ['col' => 'col-md-3', 'suffix_singular' => ' orden', 'suffix_plural' => ' ordenes']),
-            app_bitacora_field('number', 'domi', 'NÚMERO DE DOMICILIOS', ['col' => 'col-md-3', 'suffix_singular' => 'domicilio', 'suffix_plural' => 'domicilios']),
-            app_bitacora_field('number', 'domiciliarios', 'DOMICILIARIOS', ['col' => 'col-md-3', 'suffix_singular' => 'domicilliario', 'suffix_plural' => 'domiciliarios']),
-            app_bitacora_field('number', 'hdomi', 'HORAS EMPLEADAS DOMICILIARIOS', ['col' => 'col-md-3', 'suffix_singular' => 'hora', 'suffix_plural' => 'horas']),
-
-            app_bitacora_subsection('indicadores', 'INDICADORES DE DESEMPEÑO', 'Ingrese los indicadores de desempeño durante la jornada'),
-            app_bitacora_field('number', 'pd', 'CUMPLIMIENTO PRESUPUESTO DIARIO', ['col' => 'col-md-3', 'suffix' => '%']),
-            app_bitacora_field('number', 'tp', 'TICKET PROMEDIO', ['col' => 'col-md-3', 'number_format' => 'currency', 'number_decimals' => 0]),
+            app_bitacora_yes_no_field('novedades_rappi', '¿NOVEDADES CON RAPPI?', 'dorpGroup', 'dorp', 'DETALLE LAS NOVEDADES CON RAPPI', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'No hubo novedades con Rappi.']),
+            app_bitacora_yes_no_field('novedades_domi', '¿NOVEDADES CON DOMICILIOS PROPIOS?', 'dompGroup', 'domp', 'DETALLE LAS NOVEDADES CON DOMICILIOS PROPIOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'No hubo novedades con Rappi.']),
+            //app_bitacora_field('textarea', 'domp', 'NOVEDADES CON DOMICILIOS PROPIOS', ['col' => 'col-md-6']),
         ]],
-
         ['key' => 'mercadeo', 'title' => 'MERCADEO', 'fields' => [
-
             app_bitacora_yes_no_detail_group_field('material_pop', '¿SE RECIBIÓ MATERIAL POP?', [
                 app_bitacora_field('text', 'tipo_material', '¿QUÉ MATERIAL SE RECIBIÓ?', ['placeholder' => 'Ejemplo: Volantes, afiches, etc.', 'col' => 'col-md-4']),
                 app_bitacora_field('text', 'cantidad_material', '¿CUÁNTAS UNIDADES SE RECIBIERON?', ['col' => 'col-md-4']),

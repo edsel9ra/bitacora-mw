@@ -182,7 +182,7 @@ app_bitacora_yes_no_field(
 
 `detail_default_from` copia el valor del campo indicado cuando se selecciona "Sí". Mientras el usuario no cambie manualmente el detalle, este se actualiza junto con el campo de origen.
 
-Los grupos Sí/No con cantidad aceptan `no_report_value` para personalizar el texto mostrado en PDF y correo cuando la respuesta es "No". El valor enviado por el formulario continúa siendo `No`:
+Los grupos Sí/No con cantidad aceptan `no_report_value` como texto semántico para una respuesta "No". El valor enviado por el formulario continúa siendo `No`; los `No` predeterminados se omiten de PDF y correo para que no mantengan visibles secciones sin novedades:
 
 ```php
 app_bitacora_yes_no_quantity_group_field(
@@ -214,7 +214,7 @@ app_bitacora_yes_no_quantity_group_field(
 )
 ```
 
-Los campos Sí/No simples y los grupos Sí/No con detalle también aceptan `no_report_value`. Si no se especifica, el texto usado es `Sin novedad`; si existe un detalle explícito, este conserva prioridad:
+Los campos Sí/No simples y los grupos Sí/No con detalle también aceptan `no_report_value`. Si no se especifica, el texto semántico es `Sin novedad`; los `No` predeterminados no generan filas en PDF/correo y un detalle explícito no generado automáticamente conserva prioridad:
 
 ```php
 app_bitacora_yes_no_field(
@@ -246,7 +246,7 @@ app_bitacora_field(
 )
 ```
 
-Los grupos de cantidad directa omiten la pregunta Sí/No. La cantidad es obligatoria, admite `0` y `zero_report_value` define el texto que se muestra en PDF y correo cuando no hay registros:
+Los grupos de cantidad directa omiten la pregunta Sí/No. La cantidad es obligatoria, admite `0` y `zero_report_value` conserva el texto semántico del estado sin registros; cuando la cantidad es `0`, ese estado se omite de PDF y correo:
 
 ```php
 app_bitacora_quantity_group_field(

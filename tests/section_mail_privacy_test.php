@@ -149,10 +149,75 @@ namespace {
         return bit_report_display_value(trim($answer . ($detail !== '' ? '. ' . $detail : '')));
     }
 
+    function bit_report_yes_no_is_silent(array $field, array $data, string $answer, string $detail = ''): bool
+    {
+        if (trim($answer) !== 'No') {
+            return false;
+        }
+        if (trim($detail) === '') {
+            return true;
+        }
+
+        $name = (string) ($field['name'] ?? '');
+        return $name !== '' && in_array($name, (array) ($data['_conditional_default_fields'] ?? []), true);
+    }
+
+    function bit_report_rows_have_content(array $rows): bool
+    {
+        foreach ($rows as $row) {
+            if (trim((string) $row) !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function bit_render_report_blocks(array $fields, callable $renderField): array
+    {
+        $blocks = [];
+        $pendingRows = [];
+        $rows = [];
+        $hasReportableRows = false;
+        $hasFieldsSinceMarker = false;
+        $flush = static function () use (&$blocks, &$pendingRows, &$rows, &$hasReportableRows, &$hasFieldsSinceMarker): void {
+            if ($hasReportableRows) {
+                $blocks[] = array_merge($pendingRows, $rows);
+            }
+            $pendingRows = [];
+            $rows = [];
+            $hasReportableRows = false;
+            $hasFieldsSinceMarker = false;
+        };
+
+        foreach ($fields as $field) {
+            $fieldRows = (array) $renderField($field);
+            if (app_bitacora_field_is_presentational($field)) {
+                if ($hasFieldsSinceMarker) {
+                    $flush();
+                }
+                $pendingRows = array_merge($pendingRows, $fieldRows);
+                continue;
+            }
+
+            $hasFieldsSinceMarker = true;
+            if (bit_report_rows_have_content($fieldRows)) {
+                $hasReportableRows = true;
+            }
+            $rows = array_merge($rows, $fieldRows);
+        }
+
+        $flush();
+        return $blocks;
+    }
+
     function bit_render_quantity_group(array $field, array $data): array
     {
         $name = (string) ($field['name'] ?? '');
         $answer = trim((string) ($data[$name] ?? ''));
+        if ($answer === 'No') {
+            return [];
+        }
         if ($answer !== 'Si') {
             return [bit_render_detail((string) ($field['label'] ?? $name), $answer === 'No' ? 'Sin novedad' : 'No diligenciado', true)];
         }
@@ -169,6 +234,28 @@ namespace {
             ]),
             true
         )];
+    }
+
+    function bit_render_direct_quantity_group(array $field, array $data): array
+    {
+        $quantityName = (string) ($field['quantity_name'] ?? (($field['name'] ?? '') . '_cantidad'));
+        $rawQuantity = trim((string) ($data[$quantityName] ?? ''));
+        if ($rawQuantity === '' || (int) $rawQuantity === 0) {
+            return [];
+        }
+
+        return [bit_render_detail((string) ($field['label'] ?? $quantityName), (string) (int) $rawQuantity, true)];
+    }
+
+    function bit_render_multiselect_detail_group(array $field, array $data): array
+    {
+        $name = (string) ($field['name'] ?? '');
+        $groupData = $data['_multiselect_detail_groups'][$name] ?? null;
+        if (!is_array($groupData) || !empty($groupData['no_apply'])) {
+            return [];
+        }
+
+        return [];
     }
 
     function bit_render_detail(string $title, string $value, bool $mostrarSiVacio = false): string
@@ -281,8 +368,7 @@ namespace {
     section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, 'Datos del equipo') !== false, 'subseccion incluida en correo por seccion');
     section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, 'Incluye novedades') !== false, 'descripcion incluida en correo por seccion');
     section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, 'Sin novedad') !== false, 'respuesta No convertida en correo por seccion');
-    section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, 'No hubo novedades configuradas') !== false, 'respuesta No usa valor configurado en correo por seccion');
-    section_mail_assert_same(false, strpos(PHPMailer::$instances[0]->Body, 'No hubo novedades configuradas bolsas') !== false, 'correo por seccion no agrega sufijo al No configurado');
+    section_mail_assert_same(false, strpos(PHPMailer::$instances[0]->Body, 'No hubo novedades configuradas') !== false, 'respuesta No predeterminada se omite en correo por seccion');
     section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, '$123.456') !== false, 'numero monetario formateado en correo por seccion');
     section_mail_assert_same(true, strpos(PHPMailer::$instances[0]->Body, '3 unidades') !== false, 'sufijo de cantidad en correo por seccion');
     section_mail_assert_same(false, strpos(PHPMailer::$instances[0]->Body, 'No. Sin novedad.') !== false, 'correo por seccion sin prefijo No');
@@ -290,8 +376,7 @@ namespace {
     $supervisionBody = bit_render_supervision_body($sections, $data);
     section_mail_assert_same(true, strpos($supervisionBody, 'Datos del equipo') !== false, 'subseccion incluida en correo de supervision');
     section_mail_assert_same(true, strpos($supervisionBody, 'Sin novedad') !== false, 'respuesta No convertida en correo de supervision');
-    section_mail_assert_same(true, strpos($supervisionBody, 'No hubo novedades configuradas') !== false, 'respuesta No usa valor configurado en correo de supervision');
-    section_mail_assert_same(false, strpos($supervisionBody, 'No hubo novedades configuradas bolsas') !== false, 'correo de supervision no agrega sufijo al No configurado');
+    section_mail_assert_same(false, strpos($supervisionBody, 'No hubo novedades configuradas') !== false, 'respuesta No predeterminada se omite en correo de supervision');
     section_mail_assert_same(true, strpos($supervisionBody, '$123.456') !== false, 'numero monetario formateado en correo de supervision');
     section_mail_assert_same(true, strpos($supervisionBody, '3 unidades') !== false, 'sufijo de cantidad en correo de supervision');
     section_mail_assert_same(false, strpos($supervisionBody, 'No. Sin novedad.') !== false, 'correo de supervision sin prefijo No');
@@ -305,6 +390,96 @@ namespace {
         'relative_path' => '1/2026/08/bitacora.pdf',
         'file_name' => 'bitacora.pdf',
     ]], bit_pdf_queue_attachments($pdfInfo), 'adjunto conservado para correo global');
+
+    $defaultOnlySections = [[
+        'key' => 'gestion_humana',
+        'title' => 'GESTIÓN HUMANA',
+        'fields' => [[
+            'type' => 'yes_no',
+            'name' => 'vacantes',
+            'label' => '¿Hay vacantes?',
+            'detail_name' => 'vacantes_detalle',
+            'no_report_value' => 'No se tienen vacantes pendientes.',
+        ]],
+    ]];
+    $defaultOnlyData = [
+        'sede' => 'PANCE',
+        'fecha' => '03-08-2026',
+        'fecha_iso' => '2026-08-03',
+        'responsable' => 'Prueba',
+        'cargo' => 'Pruebas',
+        'vacantes' => 'No',
+    ];
+    section_mail_assert_same('', bit_render_assigned_sections_body($defaultOnlySections, $defaultOnlyData, ['gestion_humana']), 'correo por seccion omite seccion sin respuestas reportables');
+    section_mail_assert_same('', bit_render_supervision_body($defaultOnlySections, $defaultOnlyData), 'correo de supervision omite seccion sin respuestas reportables');
+
+    $additionalDefaultSections = [[
+        'key' => 'defaults_extra',
+        'title' => 'DEFAULTS EXTRA',
+        'fields' => [[
+            'type' => 'multiselect_detail_group',
+            'name' => 'visitas_areas',
+            'label' => 'Visitas de áreas',
+        ], [
+            'type' => 'quantity_group',
+            'name' => 'actividades_mercadeo',
+            'label' => 'Actividades/campañas',
+            'quantity_name' => 'actividades_mercadeo_cantidad',
+        ]],
+    ]];
+    $additionalDefaultData = [
+        'sede' => 'PANCE',
+        'fecha' => '03-08-2026',
+        'responsable' => 'Prueba',
+        'cargo' => 'Pruebas',
+        '_multiselect_detail_groups' => [
+            'visitas_areas' => ['no_apply' => true, 'items' => []],
+        ],
+        'actividades_mercadeo_cantidad' => '0',
+    ];
+    section_mail_assert_same('', bit_render_assigned_sections_body($additionalDefaultSections, $additionalDefaultData, ['defaults_extra']), 'correo por seccion omite no-apply y cantidad cero');
+
+    $subsectionBlockSections = [[
+        'key' => 'operaciones_bloques',
+        'title' => 'OPERACIONES',
+        'fields' => [[
+            'type' => 'subsection',
+            'name' => 'bloque_sin_datos',
+            'label' => 'OBSERVACIONES SIN DATOS',
+            'description' => 'Esta subsección no debe aparecer.',
+        ], [
+            'type' => 'yes_no',
+            'name' => 'bloque_no',
+            'label' => 'Novedad del bloque',
+            'detail_name' => 'bloque_no_detalle',
+        ], [
+            'type' => 'subsection',
+            'name' => 'bloque_con_datos',
+            'label' => 'OBSERVACIONES CON DATOS',
+            'description' => 'Esta subsección sí debe aparecer.',
+        ], [
+            'type' => 'yes_no',
+            'name' => 'planillas_bloque',
+            'label' => 'Formatos diligenciados',
+            'detail_name' => 'planillas_bloque_detalle',
+        ]],
+    ]];
+    $subsectionBlockData = [
+        'sede' => 'PANCE',
+        'fecha' => '03-08-2026',
+        'responsable' => 'Prueba',
+        'cargo' => 'Pruebas',
+        'bloque_no' => 'No',
+        'planillas_bloque' => 'Si',
+        'planillas_bloque_detalle' => 'check list',
+    ];
+    $subsectionBlockBody = bit_render_assigned_sections_body($subsectionBlockSections, $subsectionBlockData, ['operaciones_bloques']);
+    section_mail_assert_same(false, strpos($subsectionBlockBody, 'OBSERVACIONES SIN DATOS') !== false, 'correo por seccion omite subseccion vacia');
+    section_mail_assert_same(true, strpos($subsectionBlockBody, 'OBSERVACIONES CON DATOS') !== false, 'correo por seccion conserva subseccion con datos');
+    section_mail_assert_same(true, strpos($subsectionBlockBody, 'Si. check list') !== false, 'correo por seccion conserva detalle positivo');
+    $subsectionSupervisionBody = bit_render_supervision_body($subsectionBlockSections, $subsectionBlockData);
+    section_mail_assert_same(false, strpos($subsectionSupervisionBody, 'OBSERVACIONES SIN DATOS') !== false, 'supervision omite subseccion vacia');
+    section_mail_assert_same(true, strpos($subsectionSupervisionBody, 'OBSERVACIONES CON DATOS') !== false, 'supervision conserva subseccion con datos');
 
     unlink($pdfPath);
     echo 'Section mail privacy tests OK' . PHP_EOL;
