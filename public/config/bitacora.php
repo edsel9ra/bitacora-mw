@@ -934,7 +934,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
 
             app_bitacora_subsection('domicilios', 'NOVEDADES DOMICILIOS', 'Ingrese las novedades de domicilios durante la jornada'),
             app_bitacora_yes_no_field('novedades_rappi', '¿NOVEDADES CON RAPPI?', 'dorpGroup', 'dorp', 'DETALLE LAS NOVEDADES CON RAPPI', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'No hubo novedades con Rappi.']),
-            app_bitacora_yes_no_field('novedades_domi', '¿NOVEDADES CON DOMICILIOS PROPIOS?', 'dompGroup', 'domp', 'DETALLE LAS NOVEDADES CON DOMICILIOS PROPIOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'No hubo novedades con Rappi.']),
+            app_bitacora_yes_no_field('novedades_domi', '¿NOVEDADES CON DOMICILIOS PROPIOS?', 'dompGroup', 'domp', 'DETALLE LAS NOVEDADES CON DOMICILIOS PROPIOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'No hubo novedades con Domicilios propios.']),
             //app_bitacora_field('textarea', 'domp', 'NOVEDADES CON DOMICILIOS PROPIOS', ['col' => 'col-md-6']),
         ]],
         ['key' => 'mercadeo', 'title' => 'MERCADEO', 'fields' => [
@@ -1100,7 +1100,8 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
             app_bitacora_yes_no_field('visita_acu', '¿HUBO VISITA DEL PROVEEDOR QUE RECOGE EL ACU?', 'bpm5Group', 'bpm5', "Describa aquí los detalles de la visita: ¿Cuáles fueron los resultados de la visita? ¿Cuántos bidonos se entregaron? ¿Qué recomendaciones dejo?", 'textarea', ['col' => 'col-md-4', 'no_report_value' => 'El dia de hoy no se realizo ninguna entrega.']),
         ]],
         ['key' => 'despensa', 'title' => 'DESPENSA', 'fields' => [
-            app_bitacora_field('textarea', 'desp', 'INGRESE LAS NOVEDADES RELACIONADAS CON MATERIAS PRIMAS DE DESPENSA', ['col' => 'col-md-12']),
+            //app_bitacora_field('textarea', 'desp', 'INGRESE LAS NOVEDADES RELACIONADAS CON MATERIAS PRIMAS DE DESPENSA', ['col' => 'col-md-12']),
+            app_bitacora_yes_no_field('novedades_despensa', '¿NOVEDADES CON DOMICILIOS PROPIOS?', 'despGroup', 'desp', 'DETALLE LAS NOVEDADES CON DOMICILIOS PROPIOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'No hubo novedades con Despensa.']),
         ]],
         ['key' => 'tesoreria', 'title' => 'TESORERÍA', 'fields' => [
             app_bitacora_field('text', 'tesor1', '¿QUIEN CIERRA LA CAJA?', ['col' => 'col-md-4']),
