@@ -1101,7 +1101,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
         ]],
         ['key' => 'despensa', 'title' => 'DESPENSA', 'fields' => [
             //app_bitacora_field('textarea', 'desp', 'INGRESE LAS NOVEDADES RELACIONADAS CON MATERIAS PRIMAS DE DESPENSA', ['col' => 'col-md-12']),
-            app_bitacora_yes_no_field('novedades_despensa', '¿NOVEDADES CON DOMICILIOS PROPIOS?', 'despGroup', 'desp', 'DETALLE LAS NOVEDADES CON DOMICILIOS PROPIOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'No hubo novedades con Despensa.']),
+            app_bitacora_yes_no_field('novedades_despensa', '¿NOVEDADES RELACIONADAS CON DESPENSA?', 'despGroup', 'desp', 'INGRESE LAS NOVEDADES RELACIONADAS CON MATERIAS PRIMAS DE DESPENSA', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'No hubo novedades con Despensa.']),
         ]],
         ['key' => 'tesoreria', 'title' => 'TESORERÍA', 'fields' => [
             app_bitacora_field('text', 'tesor1', '¿QUIEN CIERRA LA CAJA?', ['col' => 'col-md-4']),
