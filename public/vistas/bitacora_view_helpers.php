@@ -109,8 +109,8 @@ function bit_view_multiselect_field(array $field): void
     $name = (string) $field['name'];
     $id = (string) ($field['id'] ?? $name);
     bit_view_wrapper_start($field);
-    bit_view_label($id, (string) $field['label'], false);
-    echo '<select id="' . app_h($id) . '" class="form-control bit-input select2-field" name="' . app_h($name) . '[]" multiple' . bit_view_dynamic_attr($field) . '>';
+    bit_view_label($id, (string) $field['label'], (bool) ($field['required'] ?? false));
+    echo '<select id="' . app_h($id) . '" class="form-control bit-input select2-field"' . bit_view_control_attrs($field, $name . '[]') . ' multiple>';
     foreach ((array) ($field['options'] ?? []) as $value => $label) {
         if (is_int($value)) {
             $value = $label;
@@ -165,7 +165,16 @@ function bit_view_yes_no_field(array $field): void
     echo '<label class="bit-radio-pill"><input type="radio" value="No" data-toggle-detail="#' . app_h($groupId) . '"' . bit_view_control_attrs($field) . '> No</label></div>';
     echo '<div class="bit-detail-panel bit-initial-hidden" id="' . app_h($groupId) . '">';
     bit_view_label($detailName, (string) ($field['detail_label'] ?? 'Detalle'), false);
-    if ($detailType === 'number') {
+    if ($detailType === 'multiselect') {
+        echo '<select class="form-control bit-input select2-field" id="' . app_h($detailName) . '" name="' . app_h($detailName) . '[]" multiple' . bit_view_dynamic_attr($field) . '>';
+        foreach ((array) ($field['detail_options'] ?? []) as $value => $label) {
+            if (is_int($value)) {
+                $value = $label;
+            }
+            echo '<option value="' . app_h($value) . '">' . app_h($label) . '</option>';
+        }
+        echo '</select>';
+    } elseif ($detailType === 'number') {
         echo '<input class="form-control bit-input" type="number" step="any" id="' . app_h($detailName) . '" name="' . app_h($detailName) . '"' . bit_view_dynamic_attr($field) . '>';
     } elseif ($detailType === 'date') {
         echo '<input class="form-control bit-input" type="date" id="' . app_h($detailName) . '" name="' . app_h($detailName) . '"' . $detailDefaultAttr . bit_view_dynamic_attr($field) . '>';

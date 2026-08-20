@@ -754,7 +754,7 @@ function app_bitacora_multiselect_detail_group_field(string $name, string $label
         'name' => $name,
         'id' => $name,
         'label' => $label,
-        'required' => false,
+        'required' => true,
         'options' => $options,
         'detail_name' => $name . '_detalles',
         'no_apply_value' => 'No se tuvieron visitas el dia de hoy',
@@ -815,7 +815,71 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
         'Sandra Tapia - Subgerente' => 'Sandra Tapia - Subgerente',
         'Valentina Charry - Diseñadora' => 'Valentina Charry - Diseñadora',
         'Yeison Cabezas - Coordinador de Inventarios' => 'Yeison Cabezas - Coordinador de Inventarios',
-        ];
+    ];
+
+    $formatosSalon = [
+        'LIMPIEZA Y DESINFECCIÓN DEL ÁREA DE SALÓN',
+        'LIMPIEZA Y DESINFECCIÓN DE LOS BAÑOS',
+        'DEVOLUCIÓN DE PRODUCTOS DESDE LA MESA',
+        'CONTROL Y ENTREGA DE OBSEQUIOS A CLIENTES',
+        'REGISTRO DE RESIDUOS APROVECHABLES SEDES DE CENTROS COMERCIALES',
+        'REGISTRO DE RESIDUOS ORGÁNICOS'
+    ];
+
+    $formatosCocina = [
+        'PROCESADO COCINA LOMO VICHE',
+        'PROCESADO PICO DE GALLO',
+        'PROCESADO DE ENSALADAS',
+        'PORCIONADOS VARIOS',
+        'PROCESADO DE BBQ Y SOUR CREAM',
+        'PROCESADOS DE COCINA (TOTOPOS, TOCINETA PICADA Y CILANTRO)',
+        'PROCESADO DE PROTEINAS',
+        'PROCESADO DE ARROZ MEXICANO',
+        'PROGRAMACIÓN DE LAS ACTIVIDADES DIARIAS DE COCINA',
+        'VERIFICACIÓN DEL PROCESO DE FREIDO',
+        'REGISTRO DE PROCESADO DE VERDURAS',
+        'REPORTE DE AVERIAS CRISTALERIA, UTENSILIOS Y/O PRODUCTO NO CONFORME',
+        'TRATAMIENTO DE LA TRAMPA DE GRASA (LIMPIEZA Y APLICACIÓN DE LA BIOSA)',
+        'MEDICIÓN DEL ACEITE DE COCINA USADO',
+        'REGISTRO DE RESIDUOS ORGÁNICOS',
+        'INSPECCIÓN DE VEHICULOS DE MATERIA PRIMA',
+        'RECEPCIÓN E INSPECCIÓN DE MATERIAL DE EMPAQUE',
+        'FORMATO LIMPIEZA Y DESINFECCION DE LA COCINA',
+        'RECEPCIÓN E INSPECCIÓN DE MATERIA PRIMA DE COCINA',
+        'CONTROL DIARIO DE TEMPERATURA EN EQUIPOS DE REFRIGERACIÓN',
+        'CONTROL DIARIO DE TEMPERATURA EN EQUIPOS DE CONGELACIÓN',
+        'LIMPIEZA Y DESINFECCIÓN DE BODEGA',
+    ];
+
+    $formatosBar = [
+        'PROCESADO DE MELAO',
+        'TRASLADO DE PRODUCTO ENTRE AREAS',
+        'REGISTRO PROCESADOS DEL BAR',
+        'CHECK LIST SURTIDO BAR',
+        'REPORTE DE AVERIAS CRISTALERIA, UTENSILIOS Y/O PRODUCTO NO CONFORME',
+        'REGISTRO GENERACION DE HIELO',
+        'CONTROL DIARIO DE TEMPERATURA EN EQUIPOS DE REFRIGERACIÓN',
+        'CONTROL DIARIO DE TEMPERATURA EN EQUIPOS DE CONGELACIÓN',
+        'FORMATO LIMPIEZA Y DESINFECCION DE BAR',
+        'CONTROL DE PH Y CLORO DE AGUA POTABLE',
+        'RECEPCIÓN E INSPECCIÓN DE MATERIA PRIMA DEL BAR',
+    ];
+
+    $formatosChetano = [
+        'PROCESADO DE PIÑA CALADA',
+        'PROCESADO DE TOMATE ROSTIZADO',
+        'REGISTRO DE PROCESADOS CHETANO',
+        'PROCESADO DE PERA CALADA',
+        'PROGRAMACIÓN DE LAS ACTIVIDADES DIARIAS DE COCINA',
+        'PROCESADO DE MADURO HORNEADO',
+        'PROCESADO DE FOCACCIA',
+        'REPORTE DE AVERIAS CRISTALERIA, UTENSILIOS Y/O PRODUCTO NO CONFORME',
+        'REGISTRO DE RESIDUOS ORGÁNICOS',
+        'LIMPIEZA Y DESINFECCIÓN DE COCINA CHETANO',
+        'CONTROL DIARIO DE TEMPERATURA EN EQUIPOS DE REFRIGERACIÓN',
+        'CONTROL DIARIO DE TEMPERATURA EN EQUIPOS DE CONGELACIÓN',
+        'RECEPCIÓN E INSPECCIÓN DE MATERIA PRIMA DE COCINA',
+    ];
 
     $sections = [
         ['key' => 'base', 'title' => 'DATOS BÁSICOS', 'fields' => [
@@ -856,7 +920,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                 'contratistas_cantidad',
                 'CUÁNTOS AUXILIARES DE MANTENIMIENTO O CONTRATISTAS VISITARON LA SEDE',
                 [
-                    app_bitacora_field('text', 'nombre_contratista', 'NOMBRE DEL AUXILIAR O CONTRATISTA', ['col' => 'col-md-3']),
+                    app_bitacora_field('text', 'nombre_contratista', 'NOMBRE DE AUXILIAR O CONTRATISTA', ['col' => 'col-md-3']),
                     app_bitacora_field('text', 'empresa', 'EMPRESA', ['col' => 'col-md-3']),
                     app_bitacora_field('textarea', 'detalle_contratista', 'DETALLE DE LAS ACTIVIDADES REALIZADAS POR EL AUXILIAR O CONTRATISTA', ['col' => 'col-md-6']),
                 ], ['item_label' => 'EQUIPO MANTENIMIENTO/CONTRATISTA', 'order' => 10, 'no_report_value' => 'No se tuvieron visitas el dia de hoy.']
@@ -880,7 +944,8 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
             ),
             app_bitacora_yes_no_field('sac_novedades_yes_no', '¿HUBO NOVEDADES CON EL SERVICO AL CLIENTE?', 'sac_novedadesGroup', 'sac_novedades', 'DETALLE DE NOVEDADES CON EL SERVICIO AL CLIENTE', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'Sin novedades durante el servicio.']),
             app_bitacora_yes_no_field('devoluciones_novedades_yes_no', '¿HUBO NOVEDADES CON LOS PRODUCTOS (RETORNO A COCINA)?', 'devoluciones_novedadesGroup', 'devoluciones_novedades', 'DETALLE DE NOVEDADES CON DEVOLUCIONES DE PRODUCTO', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'No se retornaron productos el dia de hoy.']),
-            app_bitacora_yes_no_field('planillas_novedades_yes_no', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', 'planillas_novedadesGroup', 'planillas_novedades', 'DETALLE DE FORMATOS DILIGENCIADOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se diligenciaron formatos.']),
+            //app_bitacora_yes_no_field('planillas_novedades_yes_no', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', 'planillas_novedadesGroup', 'planillas_novedades', 'DETALLE DE FORMATOS DILIGENCIADOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se diligenciaron formatos.']),
+            app_bitacora_field('multiselect', 'formatos_salon', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', ['col' => 'col-md-6', 'options' => $formatosSalon, 'required' => false]),
             app_bitacora_subsection('novedades_jefe_cocina', 'OBSERVACIONES JEFE DE COCINA', 'Ingrese las observaciones del jefe de cocina'),
             app_bitacora_yes_no_quantity_group_field(
                 'cocina_novedades',
@@ -893,8 +958,9 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                 ], ['item_label' => 'COLABORADOR', 'order' => 0, 'col' => 'col-md-6', 'no_report_value' => 'El dia de hoy se trabajo con el personal completo.']
             ),
             app_bitacora_yes_no_field('procesados_novedades_yes_no', '¿CUALES PROCESADOS SE REALIZARON DURANTE LA JORNADA?', 'procesados_novedadesGroup', 'procesados_novedades', 'DETALLE LOS PROCESADOS REALIZADOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se realizaron procesados.']),
-            app_bitacora_yes_no_field('productos_cocina_novedades_yes_no', 'NOVEDADES CON LOS PRODUCTOS (PROXIMOS A VENCER)', 'productos_cocina_novedadesGroup', 'productos_cocina_novedades', 'DETALLE LOS PRODUCTOS PROXIMOS A VENCER PARA IMPULSAR SU VENTA', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'Sin productos próximos a vencer.']),
-            app_bitacora_yes_no_field('planillas_cocina_novedades_yes_no', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', 'planillas_cocina_novedadesGroup', 'planillas_cocina_novedades', 'DETALLE DE FORMATOS DILIGENCIADOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se diligenciaron formatos.']),
+            //app_bitacora_yes_no_field('productos_cocina_novedades_yes_no', 'NOVEDADES CON LOS PRODUCTOS (PROXIMOS A VENCER)', 'productos_cocina_novedadesGroup', 'productos_cocina_novedades', 'DETALLE LOS PRODUCTOS PROXIMOS A VENCER PARA IMPULSAR SU VENTA', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'Sin productos próximos a vencer.']),
+            //app_bitacora_yes_no_field('planillas_cocina_novedades_yes_no', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', 'planillas_cocina_novedadesGroup', 'planillas_cocina_novedades', 'DETALLE DE FORMATOS DILIGENCIADOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se diligenciaron formatos.']),
+            app_bitacora_field('multiselect', 'formatos_cocina', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', ['col' => 'col-md-12', 'options' => $formatosCocina, 'required' => false]),
             app_bitacora_subsection('novedades_jefe_bar', 'OBSERVACIONES JEFE DE BAR', 'Ingrese las observaciones del jefe de bar'),
             app_bitacora_yes_no_quantity_group_field(
                 'bar_novedades',
@@ -907,8 +973,9 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                 ], ['item_label' => 'COLABORADOR', 'order' => 0, 'col' => 'col-md-6',  'no_report_value' => 'El dia de hoy se trabajo con el personal completo.']
             ),
             app_bitacora_yes_no_field('procesados_bar_novedades_yes_no', '¿CUALES PROCESADOS SE REALIZARON DURANTE LA JORNADA?', 'procesados_bar_novedadesGroup', 'procesados_bar_novedades', 'DETALLE LOS PROCESADOS REALIZADOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se realizaron procesados.']),
-            app_bitacora_yes_no_field('productos_bar_novedades_yes_no', 'NOVEDADES CON LOS PRODUCTOS (PROXIMOS A VENCER)', 'productos_bar_novedadesGroup', 'productos_bar_novedades', 'DETALLE LOS PRODUCTOS PROXIMOS A VENCER PARA IMPULSAR SU VENTA', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'Sin productos próximos a vencer.']),
-            app_bitacora_yes_no_field('planillas_bar_novedades_yes_no', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', 'planillas_bar_novedadesGroup', 'planillas_bar_novedades', 'DETALLE DE FORMATOS DILIGENCIADOS','textarea', ['col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se diligenciaron formatos.']),
+            //app_bitacora_yes_no_field('productos_bar_novedades_yes_no', 'NOVEDADES CON LOS PRODUCTOS (PROXIMOS A VENCER)', 'productos_bar_novedadesGroup', 'productos_bar_novedades', 'DETALLE LOS PRODUCTOS PROXIMOS A VENCER PARA IMPULSAR SU VENTA', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'Sin productos próximos a vencer.']),
+            //app_bitacora_yes_no_field('planillas_bar_novedades_yes_no', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', 'planillas_bar_novedadesGroup', 'planillas_bar_novedades', 'DETALLE DE FORMATOS DILIGENCIADOS','textarea', ['col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se diligenciaron formatos.']),
+            app_bitacora_field('multiselect', 'formatos_bar', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', ['col' => 'col-md-12', 'options' => $formatosBar, 'required' => false]),
             app_bitacora_yes_no_field('hielo_produ', '¿HUBO PRODUCCIÓN DE HIELO?', 'hieloGroup', 'hielo', 'CANTIDAD PRODUCIDA (UNIDADES)', 'number', ['col'=>'col-md-3', 'suffix_singular' => 'bolsa', 'suffix_plural' => 'bolsas', 'no_report_value' => 'El dia de hoy no se produjo.']),
             app_bitacora_yes_no_field('hielo_kolbitos', '¿SE COMPRA HIELO A KOLBITOS?', 'hielo1Group', 'hielo1', 'CANTIDAD COMPRADA (UNIDADES)', 'number', ['col'=>'col-md-3', 'suffix_singular' => 'bolsa', 'suffix_plural' => 'bolsas', 'no_report_value' => 'No se realizó compra de hielo.']),
             app_bitacora_yes_no_field('hielo_consumo', '¿HUBO CONSUMO DE HIELO?', 'hielo2Group', 'hielo2', 'CANTIDAD CONSUMIDA (UNIDADES)', 'number', ['col'=>'col-md-3', 'suffix_singular' => 'bolsa', 'suffix_plural' => 'bolsas', 'no_report_value' => 'No hubo consumo.']),
@@ -916,12 +983,12 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
             app_bitacora_yes_no_field('hielo_enviado', '¿SE HA ENVIADO HIELO A OTRA SEDE?', 'hielo4Group', 'hielo4', 'DETALLE DE ENVÍO DE HIELO', 'textarea', ['col' => 'col-md-6']),
             app_bitacora_yes_no_field('hielo_recibido', '¿SE HA RECIBIDO HIELO DE OTRA SEDE?', 'hielo5Group', 'hielo5', 'DETALLE DE RECEPCIÓN DE HIELO', 'textarea', ['col' => 'col-md-6']),
 
-            app_bitacora_subsection('reservas', 'RESERVAS', 'Ingrese las reservas realizadas del día'),
+            app_bitacora_subsection('novedades_reservas', 'RESERVAS', 'Ingrese las reservas realizadas del día'),
             app_bitacora_yes_no_quantity_group_field(
                 'reservas',
                 '¿HUBO RESERVAS DURANTE LA JORNADA?',
                 'reservas_cantidad',
-                'CUÁNTAS RESERVAS HUBO',
+                '¿CUÁNTAS RESERVAS SE REALIZARON?',
                 [
                     app_bitacora_field('select', 'tipo_reserva', 'TIPO DE RESERVA', ['options' => ['Personal' => 'Personal', 'Empresarial' => 'Empresarial'], 'col' => 'col-md-4']),
                     app_bitacora_field('text', 'nombre_cliente', 'NOMBRE DEL CLIENTE O EMPRESA', ['col' => 'col-md-4']),
@@ -939,22 +1006,21 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
         ]],
         ['key' => 'mercadeo', 'title' => 'MERCADEO', 'fields' => [
             app_bitacora_yes_no_detail_group_field('material_pop', '¿SE RECIBIÓ MATERIAL POP?', [
-                app_bitacora_field('text', 'tipo_material', '¿QUÉ MATERIAL SE RECIBIÓ?', ['placeholder' => 'Ejemplo: Volantes, afiches, etc.', 'col' => 'col-md-4']),
-                app_bitacora_field('text', 'cantidad_material', '¿CUÁNTAS UNIDADES SE RECIBIERON?', ['col' => 'col-md-4']),
+                app_bitacora_field('textarea', 'tipo_material', '¿QUÉ MATERIAL SE RECIBIÓ?', ['placeholder' => 'Ejemplo: Volantes, afiches, etc.', 'col' => 'col-md-4']),
+                app_bitacora_field('textarea', 'cantidad_material', '¿CUÁNTAS UNIDADES SE RECIBIERON?', ['col' => 'col-md-4']),
                 app_bitacora_field('text', 'quien_recibe', '¿QUIÉN RECIBE EL MATERIAL?', ['col' => 'col-md-4']),
-            ], ['order' => 0, 'col' => 'col-md-8', 'no_report_value' => 'No por el dia de hoy.']),
-
+            ], ['order' => 0, 'col' => 'col-md-12', 'no_report_value' => 'No por el dia de hoy.']),
             app_bitacora_quantity_group_field(
                 'actividades_mercadeo',
                 'ACTIVIDADES/CAMPAÑAS',
                 'actividades_mercadeo_cantidad',
                 'CUÁNTAS ACTIVIDADES/CAMPAÑAS SE REALIZARON EN EL DÍA', [
                 app_bitacora_field('text', 'actividad_mercadeo', 'NOMBRE DE ACTIVIDAD/CAMPAÑA', ['col' => 'col-md-4']),
-                app_bitacora_field('textarea', 'resultados_actividad', 'DESCRIBA AQUÍ LOS DETALLES Y/O RESULTADOS, COMENTARIOS DE LOS CLIENTES', ['col' => 'col-md-8']),
+                app_bitacora_field('textarea', 'resultados_actividad', 'DESCRIBA AQUÍ LOS DETALLES Y/O RESULTADOS, COMENTARIOS DE LOS CLIENTES', ['col' => 'col-md-4']),
                 app_bitacora_field('simple_radio','decoracion_actividad','¿HUBO DECORACIÓN EN LA SEDE?', ['col' => 'col-md-4']),
-                app_bitacora_field('textarea','souvenirs','ENTREGA DE SOUVENIRS A LOS CLIENTES',['placeholder' => 'Ingrese la cantidad de souvenirs entregados y el tipo de souvenir entregado de acuerdo a la actividad. Ejemplo: 10 llaveros, 5 gorras, etc.','col' => 'col-md-8']),
+                //app_bitacora_field('textarea','souvenirs','ENTREGA DE SOUVENIRS A LOS CLIENTES',['placeholder' => 'Ingrese la cantidad de souvenirs entregados y el tipo de souvenir entregado de acuerdo a la actividad. Ejemplo: 10 llaveros, 5 gorras, etc.','col' => 'col-md-8']),
             ], ['item_label' => 'ACTIVIDAD/CAMPAÑA', 'order' => 10, 'zero_report_value' => 'No se realizaron actividades de mercadeo el día de hoy.', 'suffix_singular' => 'campaña', 'suffix_plural' => 'campañas']),
-
+            app_bitacora_yes_no_field('souvenirs', 'ENTREGA DE SOUVENIRS A LOS CLIENTES', 'souvenirsGroup', 'souvenirs_detalle','Ingrese la cantidad de souvenirs entregados y el tipo de souvenir entregado de acuerdo a la actividad. Ejemplo: 10 llaveros, 5 gorras, etc.', 'textarea',['col' => 'col-md-12', 'no_report_value' => 'No se entregaron souvenirs.', 'order' => 20]),
             app_bitacora_yes_no_quantity_group_field(
                 'casos_reportados',
                 '¿CASOS REPORTADOS EN EL HELPDESK DURANTE LA JORNADA?',
@@ -962,7 +1028,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                 'CANTIDAD DE CASOS REPORTADOS', [
                 app_bitacora_field('number', 'numero_caso', 'NÚMERO DEL CASO', ['col' => 'col-md-4']),
                 app_bitacora_field('textarea', 'detalle_caso', 'DESCRIPCIÓN DEL CASO REPORTADO', ['col' => 'col-md-8']),
-            ], ['item_label' => 'CASO REPORTADO', 'order' => 20, 'no_report_value' => 'No se reportaron casos el dia de hoy.', 'col' => 'col-md-6']),
+            ], ['item_label' => 'CASO REPORTADO', 'order' => 30, 'no_report_value' => 'No se reportaron casos el dia de hoy.', 'col' => 'col-md-6']),
             app_bitacora_yes_no_quantity_group_field(
                 'casos_pendientes',
                 '¿HAY CASOS PENDIENTES EN EL HELPDESK?',
@@ -970,7 +1036,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                 'CANTIDAD DE CASOS PENDIENTES', [
                 app_bitacora_field('number', 'numero_caso', 'NÚMERO DEL CASO', ['col' => 'col-md-4']),
                 app_bitacora_field('textarea', 'detalle_caso', 'PENDIENTE', ['col' => 'col-md-8']),
-            ], ['item_label' => 'CASO PENDIENTE', 'order' => 30, 'no_report_value' => 'No hay casos pendientes.', 'col' => 'col-md-6']),
+            ], ['item_label' => 'CASO PENDIENTE', 'order' => 40, 'no_report_value' => 'No hay casos pendientes.', 'col' => 'col-md-6']),
         ]],
         ['key' => 'gestion_humana', 'title' => 'GESTIÓN HUMANA', 'fields' => [
             app_bitacora_yes_no_quantity_group_field(
@@ -1016,14 +1082,14 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                     app_bitacora_field('select', 'cargo', 'CARGO', ['options' => $ghCargos, 'col' => 'col-md-6']),
                     app_bitacora_field('date', 'fecha_inicio', 'FECHA INICIO', ['col' => 'col-md-6']),
                     app_bitacora_field('date', 'fecha_final', 'FECHA FINAL', ['col' => 'col-md-6']),
-                ], ['item_label' => 'COLABORADOR', 'order' => 40, 'col' => 'col-md-6', 'no_report_value' => 'Sin novedad alguna.']
+                ], ['item_label' => 'COLABORADOR', 'order' => 20, 'col' => 'col-md-6', 'no_report_value' => 'Sin novedad alguna.']
             ),
             app_bitacora_yes_no_detail_group_field(
                 'gh_reingreso_vacaciones',
                 '¿HUBO REINGRESO DEL PERSONAL EN VACACIONES?',
                 [
-                    app_bitacora_field('text', 'nombre_colaborador', 'NOMBRE DEL COLABORADOR', ['col' => 'col-md-6']),
-                ], ['order' => 50, 'col' => 'col-md-6', 'no_report_value' => 'No se presento ningun reingreso.']
+                    app_bitacora_field('text', 'nombre_colaborador', 'NOMBRE DEL COLABORADOR', ['col' => 'col-md-12']),
+                ], ['order' => 30, 'col' => 'col-md-6', 'no_report_value' => 'No se presento ningun reingreso.']
             ),
             app_bitacora_yes_no_quantity_group_field(
                 'gh_ingreso_personal',
@@ -1035,7 +1101,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                     app_bitacora_field('select', 'cargo', 'CARGO', ['options' => $ghCargos, 'col' => 'col-md-6']),
                     app_bitacora_field('date', 'fecha_ingreso', 'FECHA INGRESO', ['col' => 'col-md-6']),
                     app_bitacora_field('text', 'tutor_asignado', 'NOMBRE DEL TUTOR ASIGNADO', ['col' => 'col-md-6']),
-                ], ['item_label' => 'COLABORADOR', 'order' => 60, 'col' => 'col-md-6', 'no_report_value' => 'No por el dia de hoy.']
+                ], ['item_label' => 'COLABORADOR', 'order' => 40, 'col' => 'col-md-6', 'no_report_value' => 'No por el dia de hoy.']
             ),
             app_bitacora_yes_no_quantity_group_field(
                 'gh_periodo_prueba',
@@ -1047,10 +1113,10 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                     app_bitacora_field('select', 'cargo', 'CARGO', ['options' => $ghCargos]),
                     app_bitacora_field('date', 'fecha_ingreso', 'FECHA INGRESO'),
                     app_bitacora_field('date', 'fecha_finalizacion', 'FECHA FINALIZACIÓN PERIODO DE PRUEBA'),
-                    app_bitacora_field('number', 'nota_recetario', 'NOTA DE LA EVALUACIÓN DEL RECETARIO (1 A 5)', ['min' => 1, 'max' => 5, 'step' => '0.1']),
+                    app_bitacora_field('number', 'nota_recetario', 'NOTA DE EVALUACIÓN DEL RECETARIO (1 A 5)', ['min' => 1, 'max' => 5, 'step' => '0.1']),
                     app_bitacora_field('number', 'nota_general', 'NOTA GENERAL (1 A 5)', ['min' => 1, 'max' => 5, 'step' => '0.1']),
                     app_bitacora_field('textarea', 'observaciones', 'OBSERVACIONES DEL DESEMPEÑO DURANTE LA SEMANA'),
-                ], ['item_label' => 'COLABORADOR EN PERIODO DE PRUEBA', 'weekday_only' => 6, 'availability_message' => 'Este seguimiento solo se diligencia los sábados según la fecha de bitácora.', 'order' => 70, 'col' => 'col-md-6', 'no_report_value' => 'No hay seguimientos por realizar.']
+                ], ['item_label' => 'COLABORADOR EN PERIODO DE PRUEBA', 'weekday_only' => 1, 'availability_message' => 'Este seguimiento solo se diligencia los lunes según la fecha de bitácora.', 'order' => 70, 'col' => 'col-md-6', 'no_report_value' => 'No hay seguimientos por realizar.']
             ),
         ]],
         ['key' => 'sst', 'title' => 'SEGURIDAD Y SALUD EN EL TRABAJO - SST', 'fields' => [
@@ -1059,7 +1125,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
             app_bitacora_yes_no_field('ambiente_laboral', 'HALLAZGOS POR AMBIENTE LABORAL', 'sst3Group', 'sst3', 'Ingrese el detalle de los hallazgos por ambiente laboral ocurridos durante la jornada.'),
             app_bitacora_yes_no_field('senal_sst', 'REPORTES DE EXTINTORES Y SEÑALIZACIÓN', 'sst4Group', 'sst4', 'Ingrese el detalle de los reportes de extintores y señalización ocurridos durante la jornada.'),
             app_bitacora_yes_no_field('entrega_epp', 'ENTREGA DE EPP (ELEMENTOS DE PROTECCIÓN PERSONAL)', 'sst6Group', 'sst6', 'Ingrese el detalle de la entrega de EPP (Elementos de Protección Personal) a los colaboradores durante la jornada.'),
-            app_bitacora_yes_no_field('novedades_sst', 'OTRAS NOVEDADES (SITUACIONES DE SALUD, CONDICIONES Y ACTOS INSEGUROS, ETC)', 'sst8Group', 'sst8', 'Ingrese el detalle de las novedades que no estén incluidas en las categorías anteriores.', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'Sin novedades por reportar.']),
+            app_bitacora_yes_no_field('novedades_sst', 'OTRAS NOVEDADES (SITUACIONES DE SALUD, CONDICIONES, ACTOS INSEGUROS, ETC)', 'sst8Group', 'sst8', 'Ingrese el detalle de las novedades que no estén incluidas en las categorías anteriores.', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'Sin novedades por reportar.']),
         ]],
         ['key' => 'ti', 'title' => 'SISTEMAS - TI', 'fields' => [
             app_bitacora_yes_no_field('equipos_ti', '¿HUBO NOVEDADES EN LOS EQUIPOS TI O EN LA INFRAESTRUCTURA DE RED?', 'tiGroup', 'ti', 'Describa detalladamente las novedades en los equipos de TI o en la infraestructura de red.'),
@@ -1101,16 +1167,18 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
         ]],
         ['key' => 'despensa', 'title' => 'DESPENSA', 'fields' => [
             //app_bitacora_field('textarea', 'desp', 'INGRESE LAS NOVEDADES RELACIONADAS CON MATERIAS PRIMAS DE DESPENSA', ['col' => 'col-md-12']),
-            app_bitacora_yes_no_field('novedades_despensa', '¿NOVEDADES RELACIONADAS CON DESPENSA?', 'despGroup', 'desp', 'INGRESE LAS NOVEDADES RELACIONADAS CON MATERIAS PRIMAS DE DESPENSA', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'No hubo novedades con Despensa.']),
+            app_bitacora_yes_no_field('novedades_despensa', '¿NOVEDADES RELACIONADAS CON DESPENSA?', 'despGroup', 'desp', 'INGRESE LAS NOVEDADES RELACIONADAS CON MATERIAS PRIMAS DE DESPENSA', 'textarea', ['col' => 'col-md-12', 'no_report_value' => 'No hubo novedades con Despensa.']),
         ]],
         ['key' => 'tesoreria', 'title' => 'TESORERÍA', 'fields' => [
             app_bitacora_field('text', 'tesor1', '¿QUIEN CIERRA LA CAJA?', ['col' => 'col-md-4']),
             app_bitacora_yes_no_detail_group_field(
                 'tesor2',
-                '¿HUBO NOVEDADES CON EL CIERRE DE CAJA?', [
+                '¿HUBO DIFERENCIA EN EL CIERRE DE CAJA?', [
                 app_bitacora_field('number', 'diferencia_valor', 'VALOR DE LA DIFERENCIA', ['col' => 'col-md-6', 'number_format' => 'currency', 'number_decimals' => 0]),
                 app_bitacora_field('select', 'diferencia_tipo', 'TIPO DE DIFERENCIA', ['options' => ['Faltante' => 'Faltante', 'Sobrante' => 'Sobrante'], 'col' => 'col-md-6']),
-            ], ['col' => 'col-md-8', 'no_report_value' => 'No se presentaron novedades el dia de hoy.']),
+                app_bitacora_field('textarea', 'observacion_caja', 'OBSERVACIONES', ['required' => false, 'col' => 'col-md-12']),
+            ], ['col' => 'col-md-8', 'no_report_value' => 'La caja queda cuadrada el dia de hoy.']),
+            app_bitacora_yes_no_field('novedades_cierre_caja','¿HUBO NOVEDADES EN EL CIERRE DE CAJA?', 'cierreGroup', 'cierre_caja', 'INGRESE LAS NOVEDADES PRESENTADAS EN EL CIERRE', 'textarea', ['col' => 'col-md-12']),
             app_bitacora_yes_no_quantity_group_field(
                 'tesor3',
                 'INVITACIONES',
@@ -1119,7 +1187,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                 app_bitacora_field('text', 'nombre_invitacion', 'A NOMBRE DE QUIEN FUE LA INVITACIÓN', ['col' => 'col-md-4']),
                 app_bitacora_field('text', 'autoriza_invitacion', 'AUTORIZADO POR', ['col' => 'col-md-4']),
                 app_bitacora_field('number', 'valor_invitacion', 'VALOR DE LA INVITACIÓN', ['col' => 'col-md-4', 'number_format' => 'currency', 'number_decimals' => 0]),
-            ], ['item_label' => 'INVITACIÓN', 'order' => 10, 'no_report_value' => 'No hubo invitaciones.', 'col' => 'col-md-12']),
+            ], ['item_label' => 'INVITACIÓN', 'order' => 200, 'no_report_value' => 'No hubo invitaciones.', 'col' => 'col-md-12']),
         ]],
         ['key' => 'contabilidad', 'title' => 'CONTABILIDAD', 'fields' => [
             app_bitacora_yes_no_field('facturas_mesas', 'FACTURAS ANULADAS EN MESAS', 'fa_mesasGroup', 'fa_mesas', 'Ingrese el detalle de las facturas anuladas en mesas durante la jornada.', 'textarea', ['col' => 'col-md-4']),
@@ -1162,6 +1230,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                 app_bitacora_yes_no_field('procesados_chetano_novedades_yes_no', '¿CUALES PROCESADOS SE REALIZARON DURANTE LA JORNADA?', 'procesados_chetano_novedadesGroup', 'procesados_chetano_novedades', 'DETALLE LOS PROCESADOS REALIZADOS', 'textarea', ['sedes' => $chetanoSedes, 'col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se realizaron procesados.']),
                 app_bitacora_yes_no_field('productos_chetano_novedades_yes_no', 'NOVEDADES CON LOS PRODUCTOS (PROXIMOS A VENCER)', 'productos_chetano_novedadesGroup', 'productos_chetano_novedades', 'DETALLE LOS PRODUCTOS PROXIMOS A VENCER PARA IMPULSAR SU VENTA', 'textarea', ['sedes' => $chetanoSedes, 'col' => 'col-md-6', 'no_report_value' => 'Sin productos próximos a vencer.']),
                 app_bitacora_yes_no_field('planillas_chetano_novedades_yes_no', 'FORMATOS DILIGENCIADOS DURANTE LA JORNADA', 'planillas_chetano_novedadesGroup', 'planillas_chetano_novedades', 'DETALLE DE FORMATOS DILIGENCIADOS', 'textarea', ['sedes' => $chetanoSedes, 'col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se diligenciaron formatos.']),
+                //app_bitacora_field('multiselect', 'formatos_salon', 'PRUEBA', ['col' => 'col-md-6', 'options' => $formatosSalon]),
                 app_bitacora_field('textarea', 'ventas_chetano', 'VENTA DE PRODUCTOS', ['sedes' => $chetanoSedes, 'col' => 'col-md-4']),
                 app_bitacora_field('textarea', 'dom_chetano', 'VENTAS POR DOMICILIO', ['sedes' => $chetanoSedes, 'col' => 'col-md-4']),
                 app_bitacora_field('textarea', 'mp_chetano', 'MASAS DISPONIBLES', ['sedes' => $chetanoSedes, 'col' => 'col-md-4']),
@@ -1220,7 +1289,7 @@ function app_bitacora_base_form_sections(int $empresaId, array $companyConfig): 
 
 function app_bitacora_normalize_dynamic_field(array $field): ?array
 {
-    $allowedTypes = ['text', 'textarea', 'number', 'date', 'time', 'select', 'yes_no', 'yes_no_quantity_group', 'quantity_group', 'multiselect_detail_group', 'subsection'];
+    $allowedTypes = ['text', 'textarea', 'number', 'date', 'time', 'select', 'multiselect', 'yes_no', 'yes_no_quantity_group', 'quantity_group', 'multiselect_detail_group', 'subsection'];
     $name = (string) ($field['name'] ?? '');
     $type = (string) ($field['type'] ?? 'text');
 
@@ -1240,7 +1309,7 @@ function app_bitacora_normalize_dynamic_field(array $field): ?array
         $field['col'] = 'col-md-12';
     }
 
-    if ($type === 'select') {
+    if (in_array($type, ['select', 'multiselect'], true)) {
         $field['options'] = array_values(array_filter((array) ($field['options'] ?? []), static fn($v) => trim((string) $v) !== ''));
     }
 
@@ -1256,7 +1325,23 @@ function app_bitacora_normalize_dynamic_field(array $field): ?array
         $field['detail_name'] = $detailName;
         $field['group_id'] = $field['group_id'] ?? ($detailName . 'Group');
         $field['detail_label'] = $field['detail_label'] ?? 'Detalle';
-        $field['detail_type'] = in_array(($field['detail_type'] ?? 'textarea'), ['textarea', 'number', 'date'], true) ? $field['detail_type'] : 'textarea';
+        $detailType = (string) ($field['detail_type'] ?? 'textarea');
+        if (!in_array($detailType, ['textarea', 'number', 'date', 'multiselect'], true)) {
+            $detailType = 'textarea';
+        }
+        $field['detail_type'] = $detailType;
+        if ($detailType === 'multiselect') {
+            $detailOptions = array_values(array_unique(array_filter(
+                (array) ($field['detail_options'] ?? []),
+                static fn($value) => trim((string) $value) !== ''
+            )));
+            if ($detailOptions === []) {
+                return null;
+            }
+            $field['detail_options'] = $detailOptions;
+        } else {
+            unset($field['detail_options']);
+        }
         $detailDefaultFrom = trim((string) ($field['detail_default_from'] ?? ''));
         if ($detailDefaultFrom !== '' && preg_match('/^[a-zA-Z][a-zA-Z0-9_]*$/', $detailDefaultFrom)) {
             $field['detail_default_from'] = $detailDefaultFrom;
@@ -1499,7 +1584,7 @@ function app_bitacora_normalize_field_override(array $override, array $baseField
         $normalized['col'] = 'col-md-12';
     }
 
-    if ($type === 'select' && array_key_exists('options', $override)) {
+    if (in_array($type, ['select', 'multiselect'], true) && array_key_exists('options', $override)) {
         $options = [];
         foreach ((array) $override['options'] as $value => $label) {
             $label = trim((string) $label);
@@ -1554,8 +1639,18 @@ function app_bitacora_normalize_field_override(array $override, array $baseField
                 $normalized['detail_label'] = $detailLabel;
             }
         }
-        if (array_key_exists('detail_type', $override) && in_array((string) $override['detail_type'], ['textarea', 'number', 'date'], true)) {
+        if (array_key_exists('detail_type', $override) && in_array((string) $override['detail_type'], ['textarea', 'number', 'date', 'multiselect'], true)) {
             $normalized['detail_type'] = (string) $override['detail_type'];
+        }
+        $detailType = (string) ($normalized['detail_type'] ?? ($baseField['detail_type'] ?? 'textarea'));
+        if ($detailType === 'multiselect' && array_key_exists('detail_options', $override)) {
+            $detailOptions = array_values(array_unique(array_filter(
+                (array) $override['detail_options'],
+                static fn($value) => trim((string) $value) !== ''
+            )));
+            if ($detailOptions !== []) {
+                $normalized['detail_options'] = $detailOptions;
+            }
         }
     }
 
@@ -1617,7 +1712,7 @@ function app_bitacora_apply_field_override(array $field, array $override): array
     }
 
     $type = (string) ($field['type'] ?? 'text');
-    if ($type === 'select' && array_key_exists('options', $override)) {
+    if (in_array($type, ['select', 'multiselect'], true) && array_key_exists('options', $override)) {
         $field['options'] = $override['options'];
     }
 
@@ -1630,7 +1725,7 @@ function app_bitacora_apply_field_override(array $field, array $override): array
     }
 
     if ($type === 'yes_no') {
-        foreach (['detail_label', 'detail_type'] as $key) {
+        foreach (['detail_label', 'detail_type', 'detail_options'] as $key) {
             if (array_key_exists($key, $override)) {
                 $field[$key] = $override[$key];
             }

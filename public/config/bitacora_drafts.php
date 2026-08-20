@@ -299,14 +299,27 @@ function bit_draft_field_definitions(array $sections, string $sede = ''): array
                 bit_draft_add_definition($definitions, $name, ['kind' => 'scalar', 'field' => $answerField]);
                 if ($type === 'yes_no' && !empty($field['detail_name'])) {
                     $detailType = (string) ($field['detail_type'] ?? 'textarea');
-                    $detailField = ['type' => $detailType];
-                    if (array_key_exists('detail_max_length', $field)) {
-                        $detailField['max_length'] = $field['detail_max_length'];
+                    if ($detailType === 'multiselect') {
+                        bit_draft_add_definition($definitions, (string) $field['detail_name'], [
+                            'kind' => 'list',
+                            'field' => [
+                                'type' => 'multiselect',
+                                'options' => array_values(array_unique(array_filter(
+                                    (array) ($field['detail_options'] ?? []),
+                                    static fn($value) => trim((string) $value) !== ''
+                                ))),
+                            ],
+                        ]);
+                    } else {
+                        $detailField = ['type' => $detailType];
+                        if (array_key_exists('detail_max_length', $field)) {
+                            $detailField['max_length'] = $field['detail_max_length'];
+                        }
+                        bit_draft_add_definition($definitions, (string) $field['detail_name'], [
+                            'kind' => 'scalar',
+                            'field' => $detailField,
+                        ]);
                     }
-                    bit_draft_add_definition($definitions, (string) $field['detail_name'], [
-                        'kind' => 'scalar',
-                        'field' => $detailField,
-                    ]);
                 }
                 continue;
             }

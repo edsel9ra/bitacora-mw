@@ -426,7 +426,7 @@ if (($_GET['ajax'] ?? '') === '1') {
                 </div>
             <?php endif; ?>
 
-            <?php if ((string) ($baseFieldForm['type'] ?? '') === 'select'): ?>
+            <?php if (in_array((string) ($baseFieldForm['type'] ?? ''), ['select', 'multiselect'], true)): ?>
                 <div class="form-group">
                     <label for="base_options">Opciones de lista</label>
                     <textarea id="base_options" name="options" class="form-control" rows="4"><?php echo app_h(bit_admin_options_to_lines((array) ($baseFieldForm['options'] ?? []))); ?></textarea>
@@ -490,8 +490,13 @@ if (($_GET['ajax'] ?? '') === '1') {
                             <option value="textarea" <?php echo (string) ($baseFieldForm['detail_type'] ?? 'textarea') === 'textarea' ? 'selected' : ''; ?>>Texto largo</option>
                             <option value="number" <?php echo (string) ($baseFieldForm['detail_type'] ?? 'textarea') === 'number' ? 'selected' : ''; ?>>Número</option>
                             <option value="date" <?php echo (string) ($baseFieldForm['detail_type'] ?? 'textarea') === 'date' ? 'selected' : ''; ?>>Fecha</option>
+                            <option value="multiselect" <?php echo (string) ($baseFieldForm['detail_type'] ?? 'textarea') === 'multiselect' ? 'selected' : ''; ?>>Lista múltiple</option>
                         </select>
                     </div>
+                </div>
+                <div class="form-group" data-detail-type-panel="multiselect">
+                    <label for="base_detail_options">Opciones del detalle multiselect</label>
+                    <textarea id="base_detail_options" name="detail_options" class="form-control" rows="4" placeholder="Una opción por línea"><?php echo app_h(implode("\n", (array) ($baseFieldForm['detail_options'] ?? []))); ?></textarea>
                 </div>
             <?php endif; ?>
 
@@ -543,7 +548,7 @@ if (($_GET['ajax'] ?? '') === '1') {
         <div class="form-group">
             <label for="type">Tipo</label>
             <select id="type" name="type" class="form-control" required>
-                <?php foreach (['text' => 'Texto corto', 'textarea' => 'Texto largo', 'number' => 'Número', 'date' => 'Fecha', 'time' => 'Hora', 'select' => 'Lista', 'yes_no' => 'Sí / No con detalle', 'yes_no_quantity_group' => 'Sí / No con cantidad y registros', 'quantity_group' => 'Cantidad y registros', 'multiselect_detail_group' => 'Lista con detalle por persona', 'subsection' => 'Etiqueta de subsección'] as $typeValue => $typeLabel): ?>
+                <?php foreach (['text' => 'Texto corto', 'textarea' => 'Texto largo', 'number' => 'Número', 'date' => 'Fecha', 'time' => 'Hora', 'select' => 'Lista', 'multiselect' => 'Lista múltiple', 'yes_no' => 'Sí / No con detalle', 'yes_no_quantity_group' => 'Sí / No con cantidad y registros', 'quantity_group' => 'Cantidad y registros', 'multiselect_detail_group' => 'Lista con detalle por persona', 'subsection' => 'Etiqueta de subsección'] as $typeValue => $typeLabel): ?>
                     <option value="<?php echo app_h($typeValue); ?>" <?php echo (string) $fieldForm['type'] === $typeValue ? 'selected' : ''; ?>><?php echo app_h($typeLabel); ?></option>
                 <?php endforeach; ?>
             </select>
@@ -608,7 +613,7 @@ if (($_GET['ajax'] ?? '') === '1') {
             <small class="form-text text-muted">Es opcional y aparecerá debajo del título en formulario, PDF y correo.</small>
         </div>
 
-        <div class="form-group" data-type-panel="select">
+        <div class="form-group" data-type-panel="select multiselect">
             <label for="options">Opciones de lista</label>
             <textarea id="options" name="options" class="form-control" rows="4" placeholder="Una opción por línea"><?php echo app_h(implode("\n", (array) ($fieldForm['options'] ?? []))); ?></textarea>
         </div>
@@ -672,7 +677,12 @@ if (($_GET['ajax'] ?? '') === '1') {
                     <option value="textarea" <?php echo (string) ($fieldForm['detail_type'] ?? 'textarea') === 'textarea' ? 'selected' : ''; ?>>Texto largo</option>
                     <option value="number" <?php echo (string) ($fieldForm['detail_type'] ?? 'textarea') === 'number' ? 'selected' : ''; ?>>Número</option>
                     <option value="date" <?php echo (string) ($fieldForm['detail_type'] ?? 'textarea') === 'date' ? 'selected' : ''; ?>>Fecha</option>
+                    <option value="multiselect" <?php echo (string) ($fieldForm['detail_type'] ?? 'textarea') === 'multiselect' ? 'selected' : ''; ?>>Lista múltiple</option>
                 </select>
+            </div>
+            <div class="form-group" data-detail-type-panel="multiselect">
+                <label for="detail_options">Opciones del detalle multiselect</label>
+                <textarea id="detail_options" name="detail_options" class="form-control" rows="4" placeholder="Una opción por línea"><?php echo app_h(implode("\n", (array) ($fieldForm['detail_options'] ?? []))); ?></textarea>
             </div>
         </div>
 

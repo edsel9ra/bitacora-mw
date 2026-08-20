@@ -323,7 +323,7 @@ function bit_admin_field_from_post(array $companyConfig): array
         $field['sedes'] = $selectedSedes;
     }
 
-    if ($type === 'select') {
+    if (in_array($type, ['select', 'multiselect'], true)) {
         $field['options'] = bit_admin_parse_lines((string) ($_POST['options'] ?? ''));
         if ($field['options'] === []) {
             return [null, 'Los campos tipo lista deben tener al menos una opción.'];
@@ -363,7 +363,14 @@ function bit_admin_field_from_post(array $companyConfig): array
         $detailName = trim((string) ($_POST['detail_name'] ?? ''));
         $field['detail_name'] = $detailName !== '' ? $detailName : ($name . '_detalle');
         $field['detail_label'] = trim((string) ($_POST['detail_label'] ?? 'Detalle')) ?: 'Detalle';
-        $field['detail_type'] = in_array(($_POST['detail_type'] ?? 'textarea'), ['textarea', 'number', 'date'], true) ? (string) $_POST['detail_type'] : 'textarea';
+        $detailType = (string) ($_POST['detail_type'] ?? 'textarea');
+        $field['detail_type'] = in_array($detailType, ['textarea', 'number', 'date', 'multiselect'], true) ? $detailType : 'textarea';
+        if ($field['detail_type'] === 'multiselect') {
+            $field['detail_options'] = bit_admin_parse_lines((string) ($_POST['detail_options'] ?? ''));
+            if ($field['detail_options'] === []) {
+                return [null, 'El detalle multiselect debe tener al menos una opción.'];
+            }
+        }
     }
 
     if ($type === 'multiselect_detail_group') {
@@ -536,7 +543,7 @@ function bit_admin_base_override_from_post(array $baseField, array $companyConfi
         $override['col'] = 'col-md-12';
     }
 
-    if ($type === 'select') {
+    if (in_array($type, ['select', 'multiselect'], true)) {
         $override['options'] = bit_admin_parse_option_lines((string) ($_POST['options'] ?? ''));
         if ($override['options'] === []) {
             return [null, 'Los campos base tipo lista deben tener al menos una opción.'];
@@ -577,7 +584,13 @@ function bit_admin_base_override_from_post(array $baseField, array $companyConfi
     if ($type === 'yes_no') {
         $override['detail_label'] = trim((string) ($_POST['detail_label'] ?? ($baseField['detail_label'] ?? 'Detalle'))) ?: 'Detalle';
         $detailType = (string) ($_POST['detail_type'] ?? ($baseField['detail_type'] ?? 'textarea'));
-        $override['detail_type'] = in_array($detailType, ['textarea', 'number', 'date'], true) ? $detailType : 'textarea';
+        $override['detail_type'] = in_array($detailType, ['textarea', 'number', 'date', 'multiselect'], true) ? $detailType : 'textarea';
+        if ($override['detail_type'] === 'multiselect') {
+            $override['detail_options'] = bit_admin_parse_option_lines((string) ($_POST['detail_options'] ?? ''));
+            if ($override['detail_options'] === []) {
+                return [null, 'El detalle multiselect debe tener al menos una opción.'];
+            }
+        }
     }
 
     if ($type === 'yes_no_quantity_group') {

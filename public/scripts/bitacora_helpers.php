@@ -110,6 +110,19 @@ function bit_report_yes_no_detail_value(array $field, string $value): string
     ]);
 }
 
+function bit_report_yes_no_detail_from_data(array $field, array $data): string
+{
+    $detailName = (string) ($field['detail_name'] ?? '');
+    if ($detailName === '') {
+        return '';
+    }
+
+    $value = $data[$detailName] ?? '';
+    return (string) ($field['detail_type'] ?? 'textarea') === 'multiselect'
+        ? bit_normalize_array_value($value)
+        : trim((string) $value);
+}
+
 function bit_report_yes_no_value(string $answer, string $detail = '', string $noReportValue = ''): string
 {
     $answer = trim($answer);
@@ -767,7 +780,9 @@ function bit_render_schema_field_rows(array $field, array $data): array
         return $rows;
     }
 
-    $value = trim((string) ($data[$name] ?? ''));
+    $value = $type === 'multiselect'
+        ? bit_normalize_array_value($data[$name] ?? '')
+        : trim((string) ($data[$name] ?? ''));
     if ($name === 'fechab') {
         $value = trim((string) ($data['fecha'] ?? $value));
     }
@@ -775,8 +790,7 @@ function bit_render_schema_field_rows(array $field, array $data): array
         if ($value === '') {
             return [];
         }
-        $detailName = (string) ($field['detail_name'] ?? '');
-        $detail = $detailName !== '' ? trim((string) ($data[$detailName] ?? '')) : '';
+        $detail = bit_report_yes_no_detail_from_data($field, $data);
         if (bit_report_yes_no_is_silent($field, $data, $value, $detail)) {
             return [];
         }

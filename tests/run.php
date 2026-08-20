@@ -7,6 +7,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require_once __DIR__ . '/../public/scripts/bitacora_helpers.php';
+require_once __DIR__ . '/../public/scripts/bitacora_mail_helpers.php';
 require_once __DIR__ . '/../public/scripts/bitacora_download_helpers.php';
 require_once __DIR__ . '/../public/scripts/bitacora_validation_helpers.php';
 require_once __DIR__ . '/../public/config/security.php';
@@ -417,6 +418,101 @@ test_assert_same(true, strpos($yesNoDateHtml, 'data-default-from="fechab"') !== 
 $yesNoDateDefinitions = bit_draft_field_definitions([['fields' => [$yesNoDateField]]]);
 test_assert_same('date', $yesNoDateDefinitions['fecha_visita']['field']['type'] ?? null, 'yes_no date draft definition');
 
+$yesNoMultiselectField = app_bitacora_yes_no_field(
+    'novedad_multiselect',
+    '¿Hubo novedades?',
+    'novedadMultiselectGroup',
+    'novedad_multiselect_detalle',
+    'Tipos de novedad',
+    'multiselect',
+    ['detail_options' => ['Faltante', '', 'Sobrante', 'Faltante']]
+);
+test_assert_same(['Faltante', '', 'Sobrante', 'Faltante'], $yesNoMultiselectField['detail_options'], 'yes_no multiselect helper options');
+$normalizedYesNoMultiselect = app_bitacora_normalize_dynamic_field(array_merge($yesNoMultiselectField, ['section' => 'Operaciones']));
+test_assert_same('multiselect', $normalizedYesNoMultiselect['detail_type'] ?? null, 'yes_no multiselect normalization type');
+test_assert_same(['Faltante', 'Sobrante'], $normalizedYesNoMultiselect['detail_options'] ?? null, 'yes_no multiselect normalization options');
+
+ob_start();
+bit_view_render_field($yesNoMultiselectField);
+$yesNoMultiselectHtml = (string) ob_get_clean();
+test_assert_same(true, strpos($yesNoMultiselectHtml, 'name="novedad_multiselect_detalle[]"') !== false, 'yes_no multiselect renders array name');
+test_assert_same(true, strpos($yesNoMultiselectHtml, 'multiple') !== false, 'yes_no multiselect renders multiple control');
+test_assert_same(true, strpos($yesNoMultiselectHtml, 'value="Faltante"') !== false, 'yes_no multiselect renders configured option');
+
+$yesNoMultiselectDefinitions = bit_draft_field_definitions([['fields' => [$yesNoMultiselectField]]]);
+test_assert_same('list', $yesNoMultiselectDefinitions['novedad_multiselect_detalle']['kind'] ?? null, 'yes_no multiselect draft definition kind');
+test_assert_same(['Faltante', 'Sobrante'], $yesNoMultiselectDefinitions['novedad_multiselect_detalle']['field']['options'] ?? null, 'yes_no multiselect draft options');
+
+$_POST = [
+    'novedad_multiselect' => 'Si',
+    'novedad_multiselect_detalle' => ['Faltante', 'Sobrante'],
+];
+test_assert_same([true, ''], bit_validate_yes_no_schema_field($yesNoMultiselectField), 'yes_no multiselect validation valid');
+$_POST['novedad_multiselect_detalle'] = ['No existe'];
+test_assert_same([false, 'El campo "Tipos de novedad" tiene una opción inválida.'], bit_validate_yes_no_schema_field($yesNoMultiselectField), 'yes_no multiselect validation invalid option');
+$_POST['novedad_multiselect_detalle'] = [];
+test_assert_same([false, 'El campo "Tipos de novedad" es obligatorio.'], bit_validate_yes_no_schema_field($yesNoMultiselectField), 'yes_no multiselect validation required');
+$_POST = ['novedad_multiselect' => 'No'];
+test_assert_same([true, ''], bit_validate_yes_no_schema_field($yesNoMultiselectField), 'yes_no multiselect detail omitted on No');
+
+$yesNoMultiselectRows = bit_render_schema_field_rows($yesNoMultiselectField, [
+    'fecha_iso' => '2026-08-05',
+    'novedad_multiselect' => 'Si',
+    'novedad_multiselect_detalle' => ['Faltante', 'Sobrante'],
+]);
+test_assert_same(true, strpos(implode('', $yesNoMultiselectRows), 'Si. Faltante, Sobrante') !== false, 'yes_no multiselect renders selected options in PDF');
+$yesNoMultiselectMailRows = bit_section_email_rows_for_field($yesNoMultiselectField, [
+    'fecha_iso' => '2026-08-05',
+    'novedad_multiselect' => 'Si',
+    'novedad_multiselect_detalle' => ['Faltante', 'Sobrante'],
+]);
+test_assert_same(true, strpos(implode('', $yesNoMultiselectMailRows), 'Si. Faltante, Sobrante') !== false, 'yes_no multiselect renders selected options in email');
+
+test_assert_same(
+    ['novedad_multiselect' => 'Si', 'novedad_multiselect_detalle' => ['Faltante', 'Sobrante']],
+    bit_draft_sanitize_payload([
+        'novedad_multiselect' => 'Si',
+        'novedad_multiselect_detalle' => ['Faltante', 'Sobrante'],
+    ], [['fields' => [$yesNoMultiselectField]]], ['sedes' => []]),
+    'bit_draft accepts yes_no multiselect detail'
+);
+test_assert_throws(
+    static fn() => bit_draft_sanitize_payload([
+        'novedad_multiselect' => 'Si',
+        'novedad_multiselect_detalle' => ['No existe'],
+    ], [['fields' => [$yesNoMultiselectField]]], ['sedes' => []]),
+    InvalidArgumentException::class,
+    'bit_draft rejects invalid yes_no multiselect detail option'
+);
+
+$_POST = [
+    'type' => 'yes_no',
+    'name' => 'novedad_admin',
+    'label' => 'Novedad administrable',
+    'section' => 'Operaciones',
+    'detail_name' => 'novedad_admin_detalle',
+    'detail_label' => 'Tipos administrables',
+    'detail_type' => 'multiselect',
+    'detail_options' => "A\nB\nA",
+];
+$adminYesNoMultiselect = bit_admin_field_from_post(['sedes' => ['PANCE']]);
+test_assert_same('yes_no', $adminYesNoMultiselect[0]['type'] ?? null, 'admin creates yes_no multiselect field');
+test_assert_same('multiselect', $adminYesNoMultiselect[0]['detail_type'] ?? null, 'admin stores yes_no multiselect detail type');
+test_assert_same(['A', 'B'], $adminYesNoMultiselect[0]['detail_options'] ?? null, 'admin parses yes_no multiselect detail options');
+$_POST = [
+    'label' => 'Novedad base',
+    'col' => 'col-md-6',
+    'order' => '10',
+    'sedes' => ['PANCE'],
+    'detail_label' => 'Tipos base',
+    'detail_type' => 'multiselect',
+    'detail_options' => "A\nB\nA",
+];
+$adminBaseYesNoMultiselect = bit_admin_base_override_from_post($yesNoMultiselectField, ['sedes' => ['PANCE']]);
+test_assert_same('multiselect', $adminBaseYesNoMultiselect[0]['detail_type'] ?? null, 'admin overrides base yes_no detail type');
+test_assert_same(['A', 'B'], $adminBaseYesNoMultiselect[0]['detail_options'] ?? null, 'admin parses base yes_no multiselect detail options');
+$_POST = [];
+
 $yesNoNoReportField = app_bitacora_yes_no_field(
     'novedad_configurada',
     '¿Hubo una novedad configurada?',
@@ -534,6 +630,42 @@ $normalizedGroupField = app_bitacora_normalize_dynamic_field([
 test_assert_same('currency', $normalizedGroupField['fields'][0]['number_format'] ?? null, 'group number format normalization');
 test_assert_same(2, $normalizedGroupField['fields'][0]['number_decimals'] ?? null, 'group number decimals normalization');
 test_assert_same('COP', $normalizedGroupField['fields'][0]['suffix'] ?? null, 'group number suffix normalization');
+
+$multiselectField = app_bitacora_normalize_dynamic_field([
+    'type' => 'multiselect',
+    'name' => 'categorias',
+    'label' => 'Categorías',
+    'required' => true,
+    'options' => ['A', '', 'B', 'A'],
+]);
+test_assert_same('multiselect', $multiselectField['type'] ?? null, 'multiselect dynamic type normalization');
+test_assert_same(['A', 'B', 'A'], $multiselectField['options'] ?? null, 'multiselect dynamic options normalization');
+
+ob_start();
+bit_view_multiselect_field($multiselectField);
+$multiselectHtml = (string) ob_get_clean();
+test_assert_same(true, strpos($multiselectHtml, 'name="categorias[]"') !== false, 'multiselect renders array name');
+test_assert_same(true, strpos($multiselectHtml, ' multiple') !== false, 'multiselect renders multiple control');
+test_assert_same(true, strpos($multiselectHtml, ' required') !== false, 'multiselect renders required control');
+
+$_POST = [
+    'type' => 'multiselect',
+    'name' => 'categorias',
+    'label' => 'Categorías',
+    'section' => 'Operaciones',
+    'options' => "A\nB\nA",
+    'required' => '1',
+];
+$adminMultiselect = bit_admin_field_from_post(['sedes' => ['PANCE']]);
+test_assert_same('multiselect', ($adminMultiselect[0]['type'] ?? null), 'admin creates multiselect field');
+test_assert_same(['A', 'B'], ($adminMultiselect[0]['options'] ?? null), 'admin parses multiselect options');
+$_POST = [];
+
+$multiselectRows = bit_render_schema_field_rows($multiselectField, [
+    'fecha_iso' => '2026-08-05',
+    'categorias' => ['A', 'B'],
+]);
+test_assert_same(true, strpos(implode('', $multiselectRows), 'A, B') !== false, 'multiselect renders selected options in report');
 
 $yesNoSedeField = app_bitacora_yes_no_field(
     'novedad_sede',
@@ -781,6 +913,7 @@ $draftSections = [[
             'fields' => [['type' => 'text', 'name' => 'persona']],
         ],
         ['type' => 'text', 'name' => 'solo_flora', 'sedes' => ['FLORA']],
+        ['type' => 'multiselect', 'name' => 'categorias', 'options' => ['A', 'B']],
         ['type' => 'multiselect_detail_group', 'name' => 'visitas', 'options' => ['SST']],
     ],
 ]];
@@ -795,6 +928,16 @@ test_assert_same(
         'personas_cantidad' => '1',
     ], $draftSections, $draftCompany),
     'bit_draft accepts structurally valid incomplete group'
+);
+test_assert_same(
+    ['categorias' => ['A', 'B']],
+    bit_draft_sanitize_payload(['categorias' => ['A', 'B']], $draftSections, $draftCompany),
+    'bit_draft accepts multiselect options'
+);
+test_assert_throws(
+    static fn() => bit_draft_sanitize_payload(['categorias' => ['C']], $draftSections, $draftCompany),
+    InvalidArgumentException::class,
+    'bit_draft rejects invalid multiselect option'
 );
 test_assert_throws(
     static fn() => bit_draft_sanitize_payload(['sede' => 'PANCE', 'metadata' => 'x'], $draftSections, $draftCompany),
@@ -844,6 +987,10 @@ test_assert_same([false, 'El campo "Cantidad" debe ser menor o igual a 10.'], bi
 
 $_POST = ['opcion' => 'C'];
 test_assert_same([false, 'El campo "Opción" tiene una opción inválida.'], bit_validate_configured_value(['type' => 'select', 'options' => ['A', 'B']], 'opcion', 'Opción'), 'bit_validate_configured_value select invalid');
+$_POST = ['categorias' => ['A', 'B']];
+test_assert_same([true, ''], bit_validate_multiselect_schema_field(['name' => 'categorias', 'label' => 'Categorías', 'required' => true, 'options' => ['A', 'B']]), 'multiselect validation valid');
+$_POST = ['categorias' => ['C']];
+test_assert_same([false, 'El campo "Categorías" tiene una opción inválida.'], bit_validate_multiselect_schema_field(['name' => 'categorias', 'label' => 'Categorías', 'required' => true, 'options' => ['A', 'B']]), 'multiselect validation invalid option');
 test_assert_same(true, bit_valid_date_value('2026-08-03'), 'bit_valid_date_value valid');
 test_assert_same(false, bit_valid_date_value('2026-02-30'), 'bit_valid_date_value impossible date');
 test_assert_same(true, bit_valid_time_value('23:59'), 'bit_valid_time_value valid');

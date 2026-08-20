@@ -94,6 +94,14 @@
             adminRefreshTypePanels($root, $typeSelect.val());
         }
 
+        var $detailTypeSelect = $root.find('select[name="detail_type"]').first();
+        if ($detailTypeSelect.length) {
+            $detailTypeSelect.off('change').on('change', function () {
+                adminRefreshDetailTypePanels($root, $(this).val());
+            });
+            adminRefreshDetailTypePanels($root, $detailTypeSelect.val());
+        }
+
         $root.off('submit', 'form').on('submit', 'form', function (e) {
             e.preventDefault();
             adminSubmitForm($(this), $root);
@@ -110,6 +118,13 @@
             $(this).toggle(active).find(':input').prop('disabled', !active);
         });
         $root.find('[data-input-field-only]').toggle(type !== 'subsection');
+    }
+
+    function adminRefreshDetailTypePanels($root, detailType) {
+        $root.find('[data-detail-type-panel]').each(function () {
+            var types = String($(this).attr('data-detail-type-panel') || '').split(/\s+/);
+            $(this).toggle(types.indexOf(detailType) !== -1);
+        });
     }
 
     /* ===== Sub-campos del grupo Sí/No con cantidad ===== */

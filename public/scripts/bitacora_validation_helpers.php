@@ -123,11 +123,21 @@ function bit_validate_yes_no_schema_field(array $field): array
         return [true, ''];
     }
 
+    $detailLabel = (string) ($field['detail_label'] ?? ('Detalle de ' . $label));
+    $detailType = (string) ($field['detail_type'] ?? 'textarea');
+    if ($detailType === 'multiselect') {
+        return bit_validate_multiselect_schema_field([
+            'name' => $detailName,
+            'label' => $detailLabel,
+            'required' => true,
+            'options' => $field['detail_options'] ?? [],
+        ]);
+    }
+
     $detailField = [
-        'type' => (string) ($field['detail_type'] ?? 'textarea'),
+        'type' => $detailType,
         'required' => true,
     ];
-    $detailLabel = (string) ($field['detail_label'] ?? ('Detalle de ' . $label));
     return bit_validate_configured_value($detailField, $detailName, $detailLabel);
 }
 
