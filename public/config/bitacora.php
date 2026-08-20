@@ -955,7 +955,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                 [
                     app_bitacora_field('text', 'nombre_colab_cocina', 'NOMBRE DEL COLABORADOR', ['col' => 'col-md-4']),
                     app_bitacora_field('textarea', 'detalle_novedad_cocina', 'MOTIVO DE LA NOVEDAD', ['col' => 'col-md-8']),
-                ], ['item_label' => 'COLABORADOR', 'order' => 0, 'col' => 'col-md-6', 'no_report_value' => 'El dia de hoy se trabajo con el personal completo.']
+                ], ['item_label' => 'COLABORADOR', 'order' => 0, 'col' => 'col-md-12', 'no_report_value' => 'El dia de hoy se trabajo con el personal completo.']
             ),
             //app_bitacora_yes_no_field('procesados_novedades_yes_no', '¿CUALES PROCESADOS SE REALIZARON DURANTE LA JORNADA?', 'procesados_novedadesGroup', 'procesados_novedades', 'DETALLE LOS PROCESADOS REALIZADOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se realizaron procesados.']),
             //app_bitacora_yes_no_field('productos_cocina_novedades_yes_no', 'NOVEDADES CON LOS PRODUCTOS (PROXIMOS A VENCER)', 'productos_cocina_novedadesGroup', 'productos_cocina_novedades', 'DETALLE LOS PRODUCTOS PROXIMOS A VENCER PARA IMPULSAR SU VENTA', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'Sin productos próximos a vencer.']),
@@ -970,7 +970,7 @@ function app_bitacora_default_form_sections(array $companyConfig, int $empresaId
                 [
                     app_bitacora_field('text', 'nombre_colab_bar', 'NOMBRE DEL COLABORADOR', ['col' => 'col-md-4']),
                     app_bitacora_field('textarea', 'detalle_novedad_bar', 'MOTIVO DE LA NOVEDAD', ['col' => 'col-md-8']),
-                ], ['item_label' => 'COLABORADOR', 'order' => 0, 'col' => 'col-md-6',  'no_report_value' => 'El dia de hoy se trabajo con el personal completo.']
+                ], ['item_label' => 'COLABORADOR', 'order' => 0, 'col' => 'col-md-12',  'no_report_value' => 'El dia de hoy se trabajo con el personal completo.']
             ),
             //app_bitacora_yes_no_field('procesados_bar_novedades_yes_no', '¿CUALES PROCESADOS SE REALIZARON DURANTE LA JORNADA?', 'procesados_bar_novedadesGroup', 'procesados_bar_novedades', 'DETALLE LOS PROCESADOS REALIZADOS', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'El dia de hoy no se realizaron procesados.']),
             //app_bitacora_yes_no_field('productos_bar_novedades_yes_no', 'NOVEDADES CON LOS PRODUCTOS (PROXIMOS A VENCER)', 'productos_bar_novedadesGroup', 'productos_bar_novedades', 'DETALLE LOS PRODUCTOS PROXIMOS A VENCER PARA IMPULSAR SU VENTA', 'textarea', ['col' => 'col-md-6', 'no_report_value' => 'Sin productos próximos a vencer.']),
